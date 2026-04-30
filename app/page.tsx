@@ -18,8 +18,8 @@ export default async function Home() {
         <CardHeader>
           <CardTitle className="text-2xl">Newsletter AI</CardTitle>
           <CardDescription className="text-base">
-            Sign in to generate research-backed topics, refine drafts, publish, and share a public
-            subscribe page.
+            Sign in to generate research-backed topics, refine drafts, publish,
+            and share a public subscribe page.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
@@ -34,7 +34,11 @@ export default async function Home() {
               </Button>
               <p className="text-sm text-muted-foreground">
                 No account yet?{" "}
-                <Button variant="link" className="inline h-auto p-0 text-sm" asChild>
+                <Button
+                  variant="link"
+                  className="inline h-auto p-0 text-sm"
+                  asChild
+                >
                   <Link href="/sign-up">Sign up</Link>
                 </Button>
               </p>
