@@ -2,100 +2,109 @@
 
 ## 1. Purpose
 
-Add **publish** capability so a user can send the saved **`finalDraft`** as an email via **[Resend](https://resend.com)** transactional API and mark the **`Newsletter`** as **`PUBLISHED`**.
+Add **publishing** so a user can send the current **`finalDraft`** from the app to an inbox via **[Resend](https://resend.com)** transactional email, then mark the **`Newsletter`** as **`PUBLISHED`**.
 
-This closes the gap vs `docs/superpowers/specs/2026-04-30-ai-newsletter-system-design.md` § step 6 (`POST /api/publish`).
+This extends `docs/superpowers/specs/2026-04-30-ai-newsletter-system-design.md` §6 (“Publishing”) with concrete API, env, and UI behavior for **v1**.
 
 ## 2. Goals & Success Criteria
 
-- **`POST /api/publish`** accepts **`newsletterId`** (and optional **`to`**); validates newsletter + non-empty **`finalDraft`**; sends email server-side; updates **`status`** to **`PUBLISHED`** on success.
-- **Secrets** (`RESEND_API_KEY`, etc.) exist only in server env — never exposed to the browser.
-- Draft UI exposes a **Publish** control with loading/error feedback.
-- MVP sends **plain text** body equal to **`finalDraft`** (no Markdown→HTML requirement in v1).
+- From the **draft** screen, user clicks **Publish**; server validates newsletter + draft, sends one email via Resend, updates **`Newsletter.status`** to **`PUBLISHED`**.
+- Secrets (**Resend API key**, default recipient) stay **server-only**.
+- Clear errors for validation vs upstream (Resend) failure without leaking secrets.
 
 ## 3. Scope
 
 ### In scope
 
-- Resend REST integration from **`POST /api/publish`** (Node **`fetch`** to `https://api.resend.com/emails` or official **`resend`** npm package — implementation plan chooses one).
-- Env: **`RESEND_API_KEY`**, **`RESEND_FROM`** (verified sender), **`NEWSLETTER_PUBLISH_TO`** (default recipient when **`to`** omitted).
-- Request body: **`{ newsletterId: string, to?: string }`** where **`to`** must be a valid email when provided.
-- Status transition: **`REVIEWING`** or **`DRAFTING`** → **`PUBLISHED`** after successful send (reject **`PUBLISHED`** idempotent message or **400** “already published” — choose **400** with clear message for duplicate publish).
+- **`POST /api/publish`** — JSON body, server-side Resend call, Prisma status update.
+- Env configuration: **`RESEND_API_KEY`**, **`RESEND_FROM`**, **`NEWSLETTER_PUBLISH_TO`** (default **`to`**).
+- Optional body field **`to`** (email string) overriding default recipient when provided.
+- Draft page UI: **Publish** button, loading/disabled states, success/error messaging.
+- Email format **v1:** **`text/plain`** body = trimmed **`finalDraft`** (no Markdown→HTML in v1 unless trivial `<pre>` escape decided during implementation).
 
 ### Out of scope
 
-- Mailchimp, lists, templates UI, scheduling, webhooks for bounces/opens.
-- Markdown rendering to HTML (follow-up).
-- Auth / multi-tenant isolation (same caveat as existing APIs).
+- Mailchimp, lists, campaigns, scheduling, templates UI.
+- Auth / RBAC (same assumption as existing UI spec).
+- Webhooks for bounces/opens.
+- **`publishedAt`** column (optional follow-up; **`updatedAt`** suffices for v1).
 
-## 4. API Contract
+## 4. Preconditions & Status Rules
+
+- Newsletter **must exist**.
+- **`finalDraft`** must be non-empty after trim.
+- **`status`** must be **`REVIEWING`** or **`DRAFTING`** to publish (reject **`PUBLISHED`** with **409** or **400** with clear message; reject **`RESEARCHING`** with **400**).
+- Recipient: **`to`** from JSON **if** valid email **else** **`NEWSLETTER_PUBLISH_TO`** env; if neither resolves → **400**.
+
+## 5. API Contract
 
 ### `POST /api/publish`
 
-**Headers:** `Content-Type: application/json`
-
-**Body:**
+**Request body:**
 
 ```json
 {
-  "newsletterId": "<uuid>",
-  "to": "optional@example.com"
+  "newsletterId": "uuid",
+  "to": "optional@recipient.example"
 }
 ```
 
-**Recipient resolution:**
+**Success (200):**
 
-1. If **`to`** present → validate RFC5322-ish with Zod **`z.string().email()`**.
-2. Else use **`process.env.NEWSLETTER_PUBLISH_TO`** trimmed.
-3. If still missing → **400** `{ "error": "Missing recipient: set NEWSLETTER_PUBLISH_TO or pass \"to\"." }`.
+```json
+{
+  "ok": true,
+  "messageId": "optional-string-from-resend"
+}
+```
 
-**Server env (required for send):**
+**Errors:**
 
-- **`RESEND_API_KEY`** — if missing → **503** `{ "error": "Email not configured." }` (do not leak detail).
+| Status | When |
+|--------|------|
+| **400** | Missing `newsletterId`, invalid email `to`, empty `finalDraft`, missing recipient resolution |
+| **404** | Newsletter not found |
+| **409** | Already `PUBLISHED` (or optional **400** with message — pick one in implementation; prefer **409**) |
+| **502** | Resend HTTP error / network failure after retries (if any) |
 
-**Newsletter lookup:**
+Error JSON shape: `{ "error": string }` — human-readable, no raw upstream payloads.
 
-- **`findUnique`** by **`newsletterId`** → **404** if missing.
+## 6. Environment Variables
 
-**Preconditions:**
+| Variable | Required | Description |
+|----------|----------|-------------|
+| **`RESEND_API_KEY`** | Yes for publish | Resend API key (server only). |
+| **`RESEND_FROM`** | Yes | Verified sender, e.g. `Newsletter <onboarding@resend.dev>` or domain-verified address. |
+| **`NEWSLETTER_PUBLISH_TO`** | Yes unless every request sends **`to`** | Default recipient email. |
 
-- **`finalDraft`** after trim non-empty → else **400** `{ "error": "No draft content to publish." }`.
-- **`status`** not **`PUBLISHED`** → else **400** `{ "error": "Newsletter already published." }`.
-- **`status`** is **`DRAFTING`** or **`REVIEWING`** → else **400** `{ "error": "Newsletter must be in drafting or review before publish." }` (reject **`RESEARCHING`** and **`PUBLISHED`**).
+Document in **`.env.example`** without real secrets.
 
-**Success response:** **200** JSON e.g. `{ "ok": true, "resendId": "<id|null>" }` if API returns id.
+## 7. Resend Integration
 
-**Upstream failure:** **502** or **503** with `{ "error": "<safe user message>" }` — log full Resend body server-side only.
+- Use official **`resend`** npm package **or** `fetch` to `https://api.resend.com/emails` — implementation plan chooses one; prefer maintained SDK if lightweight.
+- Email **`subject`**: derive from niche or first line of draft, e.g. **`Newsletter: {niche}`** (truncate subject length safely).
 
-**Side effect:** **`prisma.newsletter.update`** set **`status: "PUBLISHED"`** only after Resend reports success.
+## 8. UI (`draft-editor.tsx`)
 
-## 5. Resend Payload (v1)
+- **Publish** button next to Save / Generate (order: Generate draft → Save draft → Publish).
+- Disabled when **`finalDraft`** empty/whitespace or request in flight.
+- On click: **`POST /api/publish`** with `{ newsletterId }` only **v1** (optional **`to`** input field deferred unless added in same milestone).
+- Success: show confirmation; **`GET`** newsletter again or rely on returned payload if extended — minimally refetch to show **`PUBLISHED`** badge.
+- Failure: show **`error`** string from JSON.
 
-- **from:** **`RESEND_FROM`**
-- **to:** resolved recipient array of one address
-- **subject:** `Newsletter: {niche}` or `Newsletter — {truncate niche}` (max ~100 chars)
-- **text:** **`finalDraft`** string
-- **reply_to:** optional future env; omit v1
+## 9. Security & Ops
 
-## 6. UI (`draft-editor` or sibling)
+- Never expose **`RESEND_API_KEY`** to the browser.
+- Log errors without logging full draft content or tokens at **info** level; restrict sensitive logs to debug if needed.
 
-- **Publish** button visible when **`finalDraft`** trim non-empty and **`status !== PUBLISHED`**.
-- On click: **`POST /api/publish`** with **`{ newsletterId }`**. Optional text field **“Send to”** bound to **`to`** can be added in implementation plan as stretch; spec allows body override without requiring new field in v1.
-- Loading: disable button + show “Publishing…”
-- Success: message + **`GET`** reload or optimistically set status badge **Published**
-- Error: show **`error`** string from JSON
+## 10. Dependencies
 
-## 7. Dependencies
+- Existing **`Newsletter`** model **`status`** string values include **`PUBLISHED`** per Prisma schema comments.
+- Existing draft page and **`PATCH`** **`finalDraft`** behavior unchanged.
 
-- **`draft-editor`** already persists **`finalDraft`** via **`PATCH /api/newsletters/[id]`**; publish does not re-save draft unless we add explicit “save before publish” — **recommend client calls save before publish** or server re-reads DB (server always reads latest from DB before send; no client save required).
+## 11. Follow-Ups
 
-## 8. Security
-
-- Rate limiting: rely on Resend + platform limits v1; no custom rate limit in spec.
-- Do not log **`RESEND_API_KEY`** or full **`finalDraft`** in production logs if policy forbids — at minimum avoid logging keys.
-
-## 9. Follow-Ups
-
-- HTML email from Markdown; **`resend`** React email templates.
-- Recipient list / audience model in Prisma.
-- Auth on **`/api/publish`**.
+- Markdown→HTML rendering for nicer emails.
+- Optional **`to`** field in UI + validation.
+- **`publishedAt`** column and audit trail.
+- Auth before exposing publish.

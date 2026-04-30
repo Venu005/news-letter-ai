@@ -9,6 +9,8 @@ export function DraftEditor({ newsletterId }: { newsletterId: string }) {
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [publishing, setPublishing] = useState(false);
+  const [publishOk, setPublishOk] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notFound, setNotFound] = useState(false);
 
@@ -48,6 +50,7 @@ export function DraftEditor({ newsletterId }: { newsletterId: string }) {
   async function generateDraft() {
     setGenerating(true);
     setError(null);
+    setPublishOk(null);
     try {
       const res = await fetch("/api/generate-draft", {
         method: "POST",
@@ -70,6 +73,7 @@ export function DraftEditor({ newsletterId }: { newsletterId: string }) {
   async function saveDraft() {
     setSaving(true);
     setError(null);
+    setPublishOk(null);
     try {
       const res = await fetch(`/api/newsletters/${newsletterId}`, {
         method: "PATCH",
@@ -84,6 +88,52 @@ export function DraftEditor({ newsletterId }: { newsletterId: string }) {
       await load();
     } finally {
       setSaving(false);
+    }
+  }
+
+  const draftTrimmed = draftText.trim();
+  const canPublish =
+    draftTrimmed.length > 0 &&
+    status !== "PUBLISHED" &&
+    status !== "RESEARCHING" &&
+    (status === "DRAFTING" || status === "REVIEWING");
+
+  async function publishDraft() {
+    setPublishing(true);
+    setError(null);
+    setPublishOk(null);
+    try {
+      const saveRes = await fetch(`/api/newsletters/${newsletterId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ finalDraft: draftText }),
+      });
+      const saveData = await saveRes.json().catch(() => ({}));
+      if (!saveRes.ok) {
+        setError(
+          typeof saveData.error === "string"
+            ? saveData.error
+            : "Could not save draft before publishing.",
+        );
+        return;
+      }
+
+      const pubRes = await fetch("/api/publish", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ newsletterId }),
+      });
+      const pubData = await pubRes.json().catch(() => ({}));
+      if (!pubRes.ok) {
+        setError(
+          typeof pubData.error === "string" ? pubData.error : "Publish failed.",
+        );
+        return;
+      }
+      setPublishOk("Published successfully.");
+      await load();
+    } finally {
+      setPublishing(false);
     }
   }
 
@@ -119,6 +169,12 @@ export function DraftEditor({ newsletterId }: { newsletterId: string }) {
         </p>
       ) : null}
 
+      {publishOk ? (
+        <p className="text-sm text-emerald-700 dark:text-emerald-400" role="status">
+          {publishOk}
+        </p>
+      ) : null}
+
       <div className="flex flex-wrap gap-3">
         <button
           type="button"
@@ -135,6 +191,19 @@ export function DraftEditor({ newsletterId }: { newsletterId: string }) {
           className="rounded-md border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-900 disabled:opacity-50 dark:border-zinc-600 dark:text-zinc-100"
         >
           {saving ? "Saving…" : "Save draft"}
+        </button>
+        <button
+          type="button"
+          disabled={
+            publishing ||
+            generating ||
+            saving ||
+            !canPublish
+          }
+          onClick={() => void publishDraft()}
+          className="rounded-md border border-emerald-700 px-4 py-2 text-sm font-medium text-emerald-800 disabled:opacity-50 dark:border-emerald-600 dark:text-emerald-300"
+        >
+          {publishing ? "Publishing…" : "Publish"}
         </button>
       </div>
 
