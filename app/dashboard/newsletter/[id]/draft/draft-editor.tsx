@@ -64,7 +64,11 @@ export function DraftEditor({ newsletterId }: { newsletterId: string }) {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setError(typeof data.error === "string" ? data.error : "Failed to generate draft.");
+        setError(
+          typeof data.error === "string"
+            ? data.error
+            : "Failed to generate draft.",
+        );
         return;
       }
       const draft = typeof data.draft === "string" ? data.draft : "";
@@ -87,7 +91,9 @@ export function DraftEditor({ newsletterId }: { newsletterId: string }) {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setError(typeof data.error === "string" ? data.error : "Failed to save draft.");
+        setError(
+          typeof data.error === "string" ? data.error : "Failed to save draft.",
+        );
         return;
       }
       await load();
@@ -130,7 +136,9 @@ export function DraftEditor({ newsletterId }: { newsletterId: string }) {
       });
       const pubData = await pubRes.json().catch(() => ({}));
       if (!pubRes.ok) {
-        setError(typeof pubData.error === "string" ? pubData.error : "Publish failed.");
+        setError(
+          typeof pubData.error === "string" ? pubData.error : "Publish failed.",
+        );
         return;
       }
       setPublishOk("Published successfully.");
@@ -186,10 +194,19 @@ export function DraftEditor({ newsletterId }: { newsletterId: string }) {
       ) : null}
 
       <div className="flex flex-wrap gap-2">
-        <Button type="button" disabled={generating} onClick={() => void generateDraft()}>
+        <Button
+          type="button"
+          disabled={generating}
+          onClick={() => void generateDraft()}
+        >
           {generating ? "Generating…" : "Generate draft"}
         </Button>
-        <Button type="button" variant="outline" disabled={saving} onClick={() => void saveDraft()}>
+        <Button
+          type="button"
+          variant="outline"
+          disabled={saving}
+          onClick={() => void saveDraft()}
+        >
           {saving ? "Saving…" : "Save draft"}
         </Button>
         <Button
@@ -207,7 +224,7 @@ export function DraftEditor({ newsletterId }: { newsletterId: string }) {
         <span className="text-sm font-medium">Markdown</span>
         <Textarea
           rows={18}
-          className="min-h-[28rem] font-mono text-sm"
+          className="min-h-112 font-mono text-sm"
           value={draftText}
           onChange={(e) => setDraftText(e.target.value)}
           spellCheck
