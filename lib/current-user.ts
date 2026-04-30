@@ -1,6 +1,6 @@
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { upsertUserByClerkId } from "@/lib/user-sync";
 
 type UpsertOk = { ok: true; userId: string };
 type UpsertFail = { ok: false };
@@ -15,13 +15,7 @@ async function upsertInternalUser(): Promise<UpsertOk | UpsertFail> {
     profile?.emailAddresses?.[0]?.emailAddress ??
     null;
 
-  const user = await prisma.user.upsert({
-    where: { clerkUserId: userId },
-    create: { clerkUserId: userId, email },
-    update: email ? { email } : {},
-    select: { id: true },
-  });
-
+  const user = await upsertUserByClerkId(userId, email);
   return { ok: true, userId: user.id };
 }
 

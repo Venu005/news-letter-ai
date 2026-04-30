@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { auth } from "@clerk/nextjs/server";
 import { Button } from "@/components/ui/button";
+import { getInternalUserId } from "@/lib/current-user";
 import {
   Card,
   CardContent,
@@ -11,6 +12,9 @@ import {
 
 export default async function Home() {
   const { userId } = await auth();
+  if (userId) {
+    await getInternalUserId();
+  }
 
   return (
     <div className="flex flex-1 flex-col items-center justify-center px-4 py-16">
