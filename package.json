@@ -17,6 +17,7 @@
     "@mastra/loggers": "^1.1.1",
     "@mastra/memory": "^1.17.3",
     "@mastra/observability": "^1.10.2",
+    "@prisma/client": "^7.8.0",
     "@radix-ui/react-use-controllable-state": "^1.2.2",
     "@rive-app/react-webgl2": "^4.28.3",
     "@streamdown/cjk": "^1.0.3",
@@ -56,6 +57,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.4",
+    "prisma": "^7.8.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

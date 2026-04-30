@@ -1,0 +1,34 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Newsletter {
+  id             String   @id @default(uuid())
+  niche          String
+  mastraThreadId String   @unique
+  status         String   @default("RESEARCHING") // RESEARCHING, DRAFTING, REVIEWING, PUBLISHED
+  finalDraft     String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  topics         Topic[]
+}
+
+model Topic {
+  id           String     @id @default(uuid())
+  title        String
+  summary      String
+  sourceUrl    String
+  isApproved   Boolean    @default(true)
+  newsletterId String
+  newsletter   Newsletter @relation(fields: [newsletterId], references: [id], onDelete: Cascade)
+}
