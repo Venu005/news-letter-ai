@@ -3,12 +3,38 @@
 import "dotenv/config";
 import { defineConfig } from "prisma/config";
 
+/**
+ * Prisma Migrate talks to SQLite via the schema engine and only understands `file:` (etc.), not `libsql://`.
+ * At runtime, `lib/prisma.ts` uses `PrismaLibSql` + DATABASE_URL (`libsql://…`).
+ *
+ * When DATABASE_URL is Turso/libSQL, migrations target a local SQLite file by default (`file:./dev.db`).
+ * Override with PRISMA_MIGRATE_DATABASE_URL if needed.
+ *
+ * After `pnpm prisma migrate dev`, apply generated SQL to Turso, e.g.:
+ *   turso db shell YOUR_DB_NAME < prisma/migrations/<folder>/migration.sql
+ */
+function migrateDatabaseUrl(): string {
+  const explicit = process.env.PRISMA_MIGRATE_DATABASE_URL?.trim();
+  if (explicit) return explicit;
+
+  const dbUrl = process.env.DATABASE_URL?.trim();
+  if (!dbUrl) {
+    throw new Error("DATABASE_URL must be set for Prisma CLI (see .env.example).");
+  }
+
+  if (dbUrl.startsWith("libsql://") || dbUrl.startsWith("libsqls://")) {
+    return "file:./dev.db";
+  }
+
+  return dbUrl;
+}
+
 export default defineConfig({
   schema: "prisma/schema.prisma",
   migrations: {
     path: "prisma/migrations",
   },
   datasource: {
-    url: process.env["DATABASE_URL"],
+    url: migrateDatabaseUrl(),
   },
 });
