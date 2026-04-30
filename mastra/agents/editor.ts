@@ -13,6 +13,6 @@ Given the Writer Agent draft (provided in the latest user message when invoked),
 - Improve tone (confident, concise), tighten wording, fix headings hierarchy, remove redundancy.
 - Ensure citations remain Markdown links using existing URLs only.
 - Output ONLY the final Markdown (no commentary).`,
-  model: "openai/gpt-4o",
+  model: "openai/gpt-4o-mini",
   memory,
 });

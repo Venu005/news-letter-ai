@@ -15,6 +15,6 @@ Anti-hallucination (mandatory):
 Formatting:
 - Lead with a compelling title (#), short dek, then dated sections per theme.
 - Keep paragraphs tight; bullet lists welcome when comparing items.`,
-  model: "openai/gpt-4o",
+  model: "openai/gpt-4o-mini",
   memory,
 });

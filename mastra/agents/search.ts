@@ -20,7 +20,7 @@ Rules:
 - Summaries must be grounded in the returned snippet/title; expand lightly but do not invent facts or outlets.
 - Prefer diversity (subtopics) within the niche.
 - Do not include markdown fences around the JSON.`,
-  model: "openai/gpt-4o",
+  model: "openai/gpt-4o-mini",
   memory,
   tools: { webSearch: webSearchTool },
 });
