@@ -20,9 +20,12 @@ State is maintained by the Next.js frontend, while continuous context for the AI
 
 1. **Search Agent:** 
    - **Tools:** Web Search tool.
-   - **Instructions:** Find the latest news and trends in a given niche. Output a structured JSON array of topics.
+   - **Instructions:** Find the latest news and trends in a given niche. Output a structured JSON array of topics, AND save the raw content/summaries and URLs of the articles found to Memory.
 2. **Writer Agent:** 
-   - **Instructions:** Write engaging, well-formatted newsletters. It receives the approved topics from the user and can reference the raw research via the shared Memory `threadId`.
+   - **Instructions:** Write engaging, well-formatted newsletters. 
+   - **Anti-Hallucination Constraints:** 
+     - *Strict Context Injection:* Must ONLY use the raw article content provided by the Search Agent in the shared Memory `threadId`. Do not invent facts.
+     - *Mandatory Citations:* Every factual claim must include a markdown link `[Source](URL)` referencing the exact URL from the research.
 3. **Editor Agent:** 
    - **Instructions:** Act as a strict supervisor. Review the Writer Agent's draft for tone, formatting, and brevity. Output the final markdown or HTML.
 
