@@ -1,42 +1,47 @@
 import Link from "next/link";
 import { auth } from "@clerk/nextjs/server";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 export default async function Home() {
   const { userId } = await auth();
 
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-8 px-4 py-16">
-      <div className="flex max-w-lg flex-col gap-2 text-center sm:text-left">
-        <h1 className="text-3xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
-          Newsletter AI
-        </h1>
-        <p className="text-lg text-zinc-600 dark:text-zinc-400">
-          Sign in to generate research-backed topics, refine drafts, publish, and share a public subscribe page.
-        </p>
-      </div>
-      {userId ? (
-        <Link
-          href="/dashboard"
-          className="rounded-md bg-zinc-900 px-4 py-2 text-white dark:bg-zinc-100 dark:text-zinc-900"
-        >
-          Go to dashboard
-        </Link>
-      ) : (
-        <>
-          <Link
-            href="/sign-in"
-            className="rounded-md bg-zinc-900 px-4 py-2 text-white dark:bg-zinc-100 dark:text-zinc-900"
-          >
-            Sign in
-          </Link>
-          <p className="text-sm text-zinc-500">
-            No account yet?{" "}
-            <Link href="/sign-up" className="underline">
-              Sign up
-            </Link>
-          </p>
-        </>
-      )}
+    <div className="flex flex-1 flex-col items-center justify-center px-4 py-16">
+      <Card className="w-full max-w-lg">
+        <CardHeader>
+          <CardTitle className="text-2xl">Newsletter AI</CardTitle>
+          <CardDescription className="text-base">
+            Sign in to generate research-backed topics, refine drafts, publish, and share a public
+            subscribe page.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          {userId ? (
+            <Button asChild>
+              <Link href="/dashboard">Go to dashboard</Link>
+            </Button>
+          ) : (
+            <>
+              <Button asChild>
+                <Link href="/sign-in">Sign in</Link>
+              </Button>
+              <p className="text-sm text-muted-foreground">
+                No account yet?{" "}
+                <Button variant="link" className="inline h-auto p-0 text-sm" asChild>
+                  <Link href="/sign-up">Sign up</Link>
+                </Button>
+              </p>
+            </>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

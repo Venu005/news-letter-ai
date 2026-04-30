@@ -1,13 +1,16 @@
 import Link from "next/link";
 import { UserButton } from "@clerk/nextjs";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 
 export default function DashboardLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <div className="flex min-h-full flex-col">
-      <header className="flex items-center justify-end gap-4 border-b border-zinc-200 px-8 py-4 dark:border-zinc-800">
-        <Link href="/" className="text-sm text-zinc-600 underline dark:text-zinc-400">
-          Home
-        </Link>
+      <header className="flex items-center justify-end gap-3 border-b px-8 py-4">
+        <Button variant="ghost" size="sm" asChild>
+          <Link href="/">Home</Link>
+        </Button>
+        <Separator orientation="vertical" className="h-6" />
         <UserButton />
       </header>
       {children}

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { DraftEditor } from "./draft-editor";
+import { Button } from "@/components/ui/button";
 
 export default async function DraftPage({
   params,
@@ -10,20 +11,14 @@ export default async function DraftPage({
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-10">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">Draft</h1>
-        <div className="flex gap-4 text-sm">
-          <Link
-            href={`/dashboard/newsletter/${id}/topics`}
-            className="font-medium text-zinc-600 underline underline-offset-4 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
-          >
-            Back to topics
-          </Link>
-          <Link
-            href="/dashboard"
-            className="font-medium text-zinc-600 underline underline-offset-4 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
-          >
-            Dashboard
-          </Link>
+        <h1 className="text-2xl font-semibold tracking-tight">Draft</h1>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" size="sm" asChild>
+            <Link href={`/dashboard/newsletter/${id}/topics`}>Back to topics</Link>
+          </Button>
+          <Button variant="ghost" size="sm" asChild>
+            <Link href="/dashboard">Dashboard</Link>
+          </Button>
         </div>
       </div>
       <DraftEditor newsletterId={id} />

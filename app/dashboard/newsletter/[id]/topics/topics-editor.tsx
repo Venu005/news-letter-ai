@@ -3,6 +3,12 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { startTransition, useCallback, useEffect, useState } from "react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Spinner } from "@/components/ui/spinner";
+import { Textarea } from "@/components/ui/textarea";
 
 export type TopicRow = {
   id: string;
@@ -83,105 +89,108 @@ export function TopicsEditor({ newsletterId }: { newsletterId: string }) {
   const hasApproved = topics.some((t) => t.isApproved);
 
   function updateTopic(id: string, patch: Partial<TopicRow>) {
-    setTopics((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, ...patch } : t)),
-    );
+    setTopics((prev) => prev.map((t) => (t.id === id ? { ...t, ...patch } : t)));
   }
 
   if (loading) {
-    return <p className="text-zinc-600 dark:text-zinc-400">Loading topics…</p>;
+    return (
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <Spinner />
+        Loading topics…
+      </div>
+    );
   }
 
   if (error && topics.length === 0 && !loading) {
     return (
-      <div className="flex flex-col gap-4 rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-900 dark:bg-red-950/40">
-        <p className="text-red-800 dark:text-red-200">{error}</p>
-        <Link href="/dashboard" className="text-sm font-medium text-red-900 underline dark:text-red-100">
-          Back home
-        </Link>
-      </div>
+      <Alert variant="destructive">
+        <AlertDescription className="flex flex-col gap-3">
+          <span>{error}</span>
+          <Button variant="outline" size="sm" className="w-fit" asChild>
+            <Link href="/dashboard">Back to dashboard</Link>
+          </Button>
+        </AlertDescription>
+      </Alert>
     );
   }
 
   return (
     <div className="flex flex-col gap-6">
       {niche ? (
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          Niche: <span className="font-medium text-zinc-900 dark:text-zinc-100">{niche}</span>
+        <p className="text-sm text-muted-foreground">
+          Niche: <span className="font-medium text-foreground">{niche}</span>
         </p>
       ) : null}
 
       {error ? (
-        <p className="text-sm text-red-600 dark:text-red-400" role="alert">
-          {error}
-        </p>
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
       ) : null}
 
       <div className="flex flex-col gap-4">
         {topics.map((t) => (
-          <article
-            key={t.id}
-            className="flex flex-col gap-3 rounded-lg border border-zinc-200 p-4 dark:border-zinc-800"
-          >
-            <label className="flex flex-col gap-1 text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-              Title
-              <input
-                className="rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm font-normal text-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
-                value={t.title}
-                onChange={(e) => updateTopic(t.id, { title: e.target.value })}
-              />
-            </label>
-            <label className="flex flex-col gap-1 text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-              Summary
-              <textarea
-                rows={3}
-                className="rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm font-normal text-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
-                value={t.summary}
-                onChange={(e) => updateTopic(t.id, { summary: e.target.value })}
-              />
-            </label>
-            <label className="flex flex-col gap-1 text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-              Source URL
-              <input
-                className="rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm font-normal text-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
-                value={t.sourceUrl}
-                onChange={(e) => updateTopic(t.id, { sourceUrl: e.target.value })}
-              />
-            </label>
-            <label className="flex items-center gap-2 text-sm text-zinc-800 dark:text-zinc-200">
-              <input
-                type="checkbox"
-                checked={t.isApproved}
-                onChange={(e) => updateTopic(t.id, { isApproved: e.target.checked })}
-              />
-              Approved for newsletter
-            </label>
-          </article>
+          <Card key={t.id} size="sm">
+            <CardContent className="flex flex-col gap-3 pt-6">
+              <div className="flex flex-col gap-2">
+                <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  Title
+                </span>
+                <Input
+                  value={t.title}
+                  onChange={(e) => updateTopic(t.id, { title: e.target.value })}
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  Summary
+                </span>
+                <Textarea
+                  rows={3}
+                  value={t.summary}
+                  onChange={(e) => updateTopic(t.id, { summary: e.target.value })}
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  Source URL
+                </span>
+                <Input
+                  value={t.sourceUrl}
+                  onChange={(e) => updateTopic(t.id, { sourceUrl: e.target.value })}
+                />
+              </div>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={t.isApproved}
+                  onChange={(e) => updateTopic(t.id, { isApproved: e.target.checked })}
+                  className="size-4 rounded border-input"
+                />
+                Approved for newsletter
+              </label>
+            </CardContent>
+          </Card>
         ))}
       </div>
 
-      <div className="flex flex-wrap gap-3">
-        <button
-          type="button"
-          disabled={saving || topics.length === 0}
-          onClick={() => void saveTopics()}
-          className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900"
-        >
+      <div className="flex flex-wrap gap-2">
+        <Button type="button" disabled={saving || topics.length === 0} onClick={() => void saveTopics()}>
           {saving ? "Saving…" : "Save changes"}
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
+          variant="outline"
           disabled={!hasApproved}
           onClick={() => router.push(`/dashboard/newsletter/${newsletterId}/draft`)}
-          className="rounded-md border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-900 disabled:opacity-50 dark:border-zinc-600 dark:text-zinc-100"
         >
           Continue to draft
-        </button>
+        </Button>
       </div>
       {!hasApproved ? (
-        <p className="text-sm text-amber-700 dark:text-amber-400">
-          Approve at least one topic to continue.
-        </p>
+        <Alert>
+          <AlertDescription>Approve at least one topic to continue.</AlertDescription>
+        </Alert>
       ) : null}
     </div>
   );

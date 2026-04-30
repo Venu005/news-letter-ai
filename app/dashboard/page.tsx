@@ -1,8 +1,18 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { HomeForm } from "@/app/home-form";
-import { prisma } from "@/lib/prisma";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import { getInternalUserId } from "@/lib/current-user";
+import { prisma } from "@/lib/prisma";
 
 export default async function DashboardPage() {
   const internalId = await getInternalUserId();
@@ -15,42 +25,52 @@ export default async function DashboardPage() {
   });
 
   return (
-    <main className="mx-auto flex max-w-2xl flex-col gap-10 px-8 py-8">
-      <section className="space-y-3">
-        <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">Your newsletters</h2>
+    <main className="mx-auto flex w-full max-w-2xl flex-col gap-10 px-8 py-8">
+      <section className="space-y-4">
+        <h2 className="text-lg font-semibold tracking-tight">Your newsletters</h2>
         {newsletters.length === 0 ? (
-          <p className="text-sm text-zinc-600 dark:text-zinc-400">No newsletters yet — create one below.</p>
+          <Card>
+            <CardContent className="pt-6">
+              <p className="text-sm text-muted-foreground">
+                No newsletters yet — create one below.
+              </p>
+            </CardContent>
+          </Card>
         ) : (
-          <ul className="divide-y divide-zinc-200 dark:divide-zinc-800">
+          <div className="flex flex-col gap-3">
             {newsletters.map((n) => (
-              <li
-                key={n.id}
-                className="flex flex-wrap items-center justify-between gap-2 py-3"
-              >
-                <div>
-                  <p className="font-medium text-zinc-900 dark:text-zinc-50">{n.niche}</p>
-                  <p className="text-xs text-zinc-500">
-                    {n.slug ? `Public: /p/${n.slug}` : "Slug missing — run backfill"}
-                  </p>
-                </div>
-                <div className="flex gap-3 text-sm">
-                  <Link href={`/dashboard/newsletter/${n.id}/topics`} className="underline">
-                    Edit
-                  </Link>
+              <Card key={n.id} size="sm">
+                <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3 space-y-0">
+                  <div className="min-w-0 space-y-1">
+                    <CardTitle className="text-base">{n.niche}</CardTitle>
+                    <CardDescription>
+                      {n.slug ? `Public: /p/${n.slug}` : "Slug missing — run backfill"}
+                    </CardDescription>
+                  </div>
+                  <Badge variant="secondary">{n.status}</Badge>
+                </CardHeader>
+                <CardContent className="flex flex-wrap gap-2 pt-0">
+                  <Button variant="outline" size="sm" asChild>
+                    <Link href={`/dashboard/newsletter/${n.id}/topics`}>Edit</Link>
+                  </Button>
                   {n.slug ? (
-                    <Link href={`/p/${n.slug}`} className="underline" target="_blank" rel="noreferrer">
-                      Public page
-                    </Link>
+                    <Button variant="outline" size="sm" asChild>
+                      <Link href={`/p/${n.slug}`} target="_blank" rel="noreferrer">
+                        Public page
+                      </Link>
+                    </Button>
                   ) : null}
-                </div>
-              </li>
+                </CardContent>
+              </Card>
             ))}
-          </ul>
+          </div>
         )}
       </section>
 
-      <section className="space-y-3">
-        <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">Create newsletter</h2>
+      <Separator />
+
+      <section className="space-y-4">
+        <h2 className="text-lg font-semibold tracking-tight">Create newsletter</h2>
         <HomeForm topicsPathPrefix="/dashboard/newsletter" />
       </section>
     </main>

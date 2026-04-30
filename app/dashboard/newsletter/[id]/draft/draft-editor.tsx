@@ -2,6 +2,11 @@
 
 import Link from "next/link";
 import { startTransition, useCallback, useEffect, useState } from "react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
+import { Textarea } from "@/components/ui/textarea";
 
 export function DraftEditor({ newsletterId }: { newsletterId: string }) {
   const [status, setStatus] = useState<string | null>(null);
@@ -125,9 +130,7 @@ export function DraftEditor({ newsletterId }: { newsletterId: string }) {
       });
       const pubData = await pubRes.json().catch(() => ({}));
       if (!pubRes.ok) {
-        setError(
-          typeof pubData.error === "string" ? pubData.error : "Publish failed.",
-        );
+        setError(typeof pubData.error === "string" ? pubData.error : "Publish failed.");
         return;
       }
       setPublishOk("Published successfully.");
@@ -138,85 +141,78 @@ export function DraftEditor({ newsletterId }: { newsletterId: string }) {
   }
 
   if (loading) {
-    return <p className="text-zinc-600 dark:text-zinc-400">Loading…</p>;
+    return (
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <Spinner />
+        Loading…
+      </div>
+    );
   }
 
   if (notFound) {
     return (
-      <div className="flex flex-col gap-4 rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-900 dark:bg-red-950/40">
-        <p className="text-red-800 dark:text-red-200">Newsletter not found.</p>
-        <Link href="/dashboard" className="text-sm font-medium text-red-900 underline dark:text-red-100">
-          Back home
-        </Link>
-      </div>
+      <Alert variant="destructive">
+        <AlertDescription className="flex flex-col gap-3">
+          <span>Newsletter not found.</span>
+          <Button variant="outline" size="sm" className="w-fit" asChild>
+            <Link href="/dashboard">Back to dashboard</Link>
+          </Button>
+        </AlertDescription>
+      </Alert>
     );
   }
 
   return (
     <div className="flex flex-col gap-4">
       {status ? (
-        <p className="text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-          Status:{" "}
-          <span className="rounded-full bg-zinc-200 px-2 py-0.5 font-normal normal-case text-zinc-800 dark:bg-zinc-800 dark:text-zinc-100">
-            {status}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            Status
           </span>
-        </p>
+          <Badge variant="secondary">{status}</Badge>
+        </div>
       ) : null}
 
       {error ? (
-        <p className="text-sm text-red-600 dark:text-red-400" role="alert">
-          {error}
-        </p>
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
       ) : null}
 
       {publishOk ? (
-        <p className="text-sm text-emerald-700 dark:text-emerald-400" role="status">
-          {publishOk}
-        </p>
+        <Alert>
+          <AlertDescription>{publishOk}</AlertDescription>
+        </Alert>
       ) : null}
 
-      <div className="flex flex-wrap gap-3">
-        <button
-          type="button"
-          disabled={generating}
-          onClick={() => void generateDraft()}
-          className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900"
-        >
+      <div className="flex flex-wrap gap-2">
+        <Button type="button" disabled={generating} onClick={() => void generateDraft()}>
           {generating ? "Generating…" : "Generate draft"}
-        </button>
-        <button
-          type="button"
-          disabled={saving}
-          onClick={() => void saveDraft()}
-          className="rounded-md border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-900 disabled:opacity-50 dark:border-zinc-600 dark:text-zinc-100"
-        >
+        </Button>
+        <Button type="button" variant="outline" disabled={saving} onClick={() => void saveDraft()}>
           {saving ? "Saving…" : "Save draft"}
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
-          disabled={
-            publishing ||
-            generating ||
-            saving ||
-            !canPublish
-          }
+          variant="outline"
+          disabled={publishing || generating || saving || !canPublish}
+          className="border-emerald-600 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-600 dark:text-emerald-400 dark:hover:bg-emerald-950/40"
           onClick={() => void publishDraft()}
-          className="rounded-md border border-emerald-700 px-4 py-2 text-sm font-medium text-emerald-800 disabled:opacity-50 dark:border-emerald-600 dark:text-emerald-300"
         >
           {publishing ? "Publishing…" : "Publish"}
-        </button>
+        </Button>
       </div>
 
-      <label className="flex flex-col gap-2 text-sm font-medium text-zinc-800 dark:text-zinc-200">
-        Markdown
-        <textarea
+      <div className="flex flex-col gap-2">
+        <span className="text-sm font-medium">Markdown</span>
+        <Textarea
           rows={18}
-          className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 font-mono text-sm text-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+          className="min-h-[28rem] font-mono text-sm"
           value={draftText}
           onChange={(e) => setDraftText(e.target.value)}
           spellCheck
         />
-      </label>
+      </div>
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { TopicsEditor } from "./topics-editor";
+import { Button } from "@/components/ui/button";
 
 export default async function TopicsPage({
   params,
@@ -10,13 +11,10 @@ export default async function TopicsPage({
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-10">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">Topics</h1>
-        <Link
-          href="/dashboard"
-          className="text-sm font-medium text-zinc-600 underline underline-offset-4 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
-        >
-          Dashboard
-        </Link>
+        <h1 className="text-2xl font-semibold tracking-tight">Topics</h1>
+        <Button variant="outline" size="sm" asChild>
+          <Link href="/dashboard">Dashboard</Link>
+        </Button>
       </div>
       <TopicsEditor newsletterId={id} />
     </div>
