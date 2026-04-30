@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { requireInternalUserId } from "@/lib/current-user";
+import { newsletterBelongsToUser } from "@/lib/newsletter-owner";
 import { prisma } from "@/lib/prisma";
 
 const topicRowSchema = z.object({
@@ -18,13 +20,13 @@ export async function PATCH(
   req: Request,
   ctx: { params: Promise<{ id: string }> },
 ) {
+  const authResult = await requireInternalUserId();
+  if (!authResult.ok) return authResult.response;
+
   const { id: newsletterId } = await ctx.params;
 
-  const newsletterExists = await prisma.newsletter.findUnique({
-    where: { id: newsletterId },
-    select: { id: true },
-  });
-  if (!newsletterExists) {
+  const ok = await newsletterBelongsToUser(newsletterId, authResult.userId);
+  if (!ok) {
     return NextResponse.json({ error: "Newsletter not found." }, { status: 404 });
   }
 

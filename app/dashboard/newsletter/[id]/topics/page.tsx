@@ -12,10 +12,10 @@ export default async function TopicsPage({
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">Topics</h1>
         <Link
-          href="/"
+          href="/dashboard"
           className="text-sm font-medium text-zinc-600 underline underline-offset-4 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
         >
-          Start over
+          Dashboard
         </Link>
       </div>
       <TopicsEditor newsletterId={id} />

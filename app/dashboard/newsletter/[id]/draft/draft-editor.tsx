@@ -145,7 +145,7 @@ export function DraftEditor({ newsletterId }: { newsletterId: string }) {
     return (
       <div className="flex flex-col gap-4 rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-900 dark:bg-red-950/40">
         <p className="text-red-800 dark:text-red-200">Newsletter not found.</p>
-        <Link href="/" className="text-sm font-medium text-red-900 underline dark:text-red-100">
+        <Link href="/dashboard" className="text-sm font-medium text-red-900 underline dark:text-red-100">
           Back home
         </Link>
       </div>

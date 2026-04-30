@@ -96,7 +96,7 @@ export function TopicsEditor({ newsletterId }: { newsletterId: string }) {
     return (
       <div className="flex flex-col gap-4 rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-900 dark:bg-red-950/40">
         <p className="text-red-800 dark:text-red-200">{error}</p>
-        <Link href="/" className="text-sm font-medium text-red-900 underline dark:text-red-100">
+        <Link href="/dashboard" className="text-sm font-medium text-red-900 underline dark:text-red-100">
           Back home
         </Link>
       </div>
@@ -172,7 +172,7 @@ export function TopicsEditor({ newsletterId }: { newsletterId: string }) {
         <button
           type="button"
           disabled={!hasApproved}
-          onClick={() => router.push(`/newsletter/${newsletterId}/draft`)}
+          onClick={() => router.push(`/dashboard/newsletter/${newsletterId}/draft`)}
           className="rounded-md border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-900 disabled:opacity-50 dark:border-zinc-600 dark:text-zinc-100"
         >
           Continue to draft

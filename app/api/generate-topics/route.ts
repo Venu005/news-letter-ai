@@ -1,11 +1,16 @@
 import { NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { mastra } from "@/mastra/index";
+import { requireInternalUserId } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
 import { parseTopicsJson } from "@/mastra/lib/topics-json";
+import { allocateNewsletterSlug } from "@/lib/slug";
 
 export async function POST(req: Request) {
   try {
+    const authResult = await requireInternalUserId();
+    if (!authResult.ok) return authResult.response;
+
     const body = (await req.json()) as { niche?: string };
     const niche = typeof body?.niche === "string" ? body.niche.trim() : "";
 
@@ -15,10 +20,21 @@ export async function POST(req: Request) {
 
     const threadId = randomUUID();
 
+    const slug = await allocateNewsletterSlug(niche, async (candidate) => {
+      const row = await prisma.newsletter.findUnique({
+        where: { slug: candidate },
+        select: { id: true },
+      });
+      return !!row;
+    });
+
     const newsletter = await prisma.newsletter.create({
       data: {
         niche,
         mastraThreadId: threadId,
+        userId: authResult.userId,
+        slug,
+        displayName: niche,
       },
     });
 

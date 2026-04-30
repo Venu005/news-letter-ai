@@ -13,16 +13,16 @@ export default async function DraftPage({
         <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">Draft</h1>
         <div className="flex gap-4 text-sm">
           <Link
-            href={`/newsletter/${id}/topics`}
+            href={`/dashboard/newsletter/${id}/topics`}
             className="font-medium text-zinc-600 underline underline-offset-4 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
           >
             Back to topics
           </Link>
           <Link
-            href="/"
+            href="/dashboard"
             className="font-medium text-zinc-600 underline underline-offset-4 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
           >
-            Start over
+            Dashboard
           </Link>
         </div>
       </div>

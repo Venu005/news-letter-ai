@@ -3,7 +3,12 @@
 import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
 
-export function HomeForm() {
+export function HomeForm({
+  topicsPathPrefix = "/dashboard/newsletter",
+}: {
+  /** Path prefix before `/[newsletterId]/topics` */
+  topicsPathPrefix?: string;
+}) {
   const router = useRouter();
   const [niche, setNiche] = useState("");
   const [loading, setLoading] = useState(false);
@@ -31,7 +36,7 @@ export function HomeForm() {
         setError("Missing newsletter id in response.");
         return;
       }
-      router.push(`/newsletter/${data.newsletterId}/topics`);
+      router.push(`${topicsPathPrefix}/${data.newsletterId}/topics`);
     } finally {
       setLoading(false);
     }

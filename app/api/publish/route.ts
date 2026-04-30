@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { requireInternalUserId } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
 
 const RESEND_SEND_URL = "https://api.resend.com/emails";
@@ -52,6 +53,9 @@ async function sendViaResend(params: {
 }
 
 export async function POST(req: Request) {
+  const authResult = await requireInternalUserId();
+  if (!authResult.ok) return authResult.response;
+
   const apiKey = process.env.RESEND_API_KEY?.trim();
   const from = process.env.RESEND_FROM?.trim();
   if (!apiKey || !from) {
@@ -81,8 +85,8 @@ export async function POST(req: Request) {
     );
   }
 
-  const newsletter = await prisma.newsletter.findUnique({
-    where: { id: parsed.data.newsletterId },
+  const newsletter = await prisma.newsletter.findFirst({
+    where: { id: parsed.data.newsletterId, userId: authResult.userId },
     select: { id: true, niche: true, status: true, finalDraft: true },
   });
 

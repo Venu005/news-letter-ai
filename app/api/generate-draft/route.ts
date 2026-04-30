@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server";
 import { mastra } from "@/mastra/index";
+import { requireInternalUserId } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
 
 export async function POST(req: Request) {
   try {
+    const authResult = await requireInternalUserId();
+    if (!authResult.ok) return authResult.response;
+
     const body = (await req.json()) as { newsletterId?: string };
     const newsletterId = typeof body?.newsletterId === "string" ? body.newsletterId.trim() : "";
 
@@ -11,8 +15,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing newsletterId in request body." }, { status: 400 });
     }
 
-    const newsletter = await prisma.newsletter.findUnique({
-      where: { id: newsletterId },
+    const newsletter = await prisma.newsletter.findFirst({
+      where: { id: newsletterId, userId: authResult.userId },
       include: {
         topics: {
           where: { isApproved: true },

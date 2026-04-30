@@ -12,15 +12,45 @@ datasource db {
   provider = "sqlite"
 }
 
+model User {
+  id          String       @id @default(uuid())
+  clerkUserId String       @unique
+  email       String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  newsletters Newsletter[]
+}
+
 model Newsletter {
-  id             String   @id @default(uuid())
+  id             String    @id @default(uuid())
   niche          String
-  mastraThreadId String   @unique
-  status         String   @default("RESEARCHING") // RESEARCHING, DRAFTING, REVIEWING, PUBLISHED
+  mastraThreadId String    @unique
+  status         String    @default("RESEARCHING") // RESEARCHING, DRAFTING, REVIEWING, PUBLISHED
   finalDraft     String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  userId         String?
+  user           User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  slug           String?   @unique
+  displayName    String?
+  tagline        String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
   topics         Topic[]
+  subscribers    Subscriber[]
+}
+
+model Subscriber {
+  id                    String     @id @default(uuid())
+  newsletterId          String
+  newsletter            Newsletter @relation(fields: [newsletterId], references: [id], onDelete: Cascade)
+  emailNormalized       String
+  status                String     @default("pending") // pending | active | unsubscribed
+  confirmationTokenHash String?
+  confirmationExpiresAt DateTime?
+  confirmedAt           DateTime?
+  createdAt             DateTime   @default(now())
+  updatedAt             DateTime   @updatedAt
+
+  @@unique([newsletterId, emailNormalized])
 }
 
 model Topic {
