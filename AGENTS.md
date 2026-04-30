@@ -98,3 +98,13 @@ Fall back to Grep/Glob/Read **only** when the graph doesn't cover what you need.
 2. Use `detect_changes` for code review.
 3. Use `get_affected_flows` to understand impact.
 4. Use `query_graph` pattern="tests_for" to check coverage.
+
+### After every git commit (agent workflow)
+
+Right after any commit lands (or when the user asks for a post-commit review), run **code-review-graph** before broad file reads:
+
+1. Call **`detect_changes_tool`** with `base: HEAD~1`, **`include_source: false`**, `max_depth: 2`, and `repo_root` set to this repo. This keeps reviews **token-efficient**; rely on its risk score and `review_priorities` first.
+2. If **`review_priorities`** is non-empty, **`risk_score`** is elevated, or the user wants line-level detail, call **`get_review_context_tool`** with `include_source: true` and a modest `max_lines_per_file` (e.g. 120–200) **only for the changed paths**.
+3. Commits that touch **only docs/markdown** may legitimately show **zero graph nodes** and risk **0**—summarize that for the user instead of forcing file-wide reads.
+
+When the user explicitly asks to **always** do graph-based review after commits, follow steps 1–3 by default in this project.
