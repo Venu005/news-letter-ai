@@ -18,8 +18,10 @@ function migrateDatabaseUrl(): string {
   if (explicit) return explicit;
 
   const dbUrl = process.env.DATABASE_URL?.trim();
+  // `prisma generate` does not open a DB; a placeholder is enough when DATABASE_URL
+  // is unset (e.g. Vercel install before env is injected, or CI generate-only).
   if (!dbUrl) {
-    throw new Error("DATABASE_URL must be set for Prisma CLI (see .env.example).");
+    return "file:./dev.db";
   }
 
   if (dbUrl.startsWith("libsql://") || dbUrl.startsWith("libsqls://")) {
