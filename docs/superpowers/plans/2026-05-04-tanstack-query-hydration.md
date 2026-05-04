@@ -44,7 +44,7 @@
 Run:
 
 ```bash
-cd /home/venusai/Desktop/skill-enhance/newsletter-ai && npm install @tanstack/react-query@^5
+cd /home/venusai/Desktop/skill-enhance/newsletter-ai && pnpm add @tanstack/react-query@^5
 ```
 
 Expected: `package.json` and `package-lock.json` update; no peer dependency errors for React 19.
@@ -455,12 +455,12 @@ export async function getNewsletterDehydratedState(newsletterId: string) {
 }
 ```
 
-- [ ] **Step 3: Run `npm run build`**
+- [ ] **Step 3: Run `pnpm run build`**
 
 Run:
 
 ```bash
-cd /home/venusai/Desktop/skill-enhance/newsletter-ai && npm run build
+cd /home/venusai/Desktop/skill-enhance/newsletter-ai && pnpm run build
 ```
 
 Expected: build succeeds. If Next marks the topics/draft pages as static incorrectly, add `export const dynamic = "force-dynamic"` to those pages only as a last resort (prefetch already implies dynamic).
@@ -532,7 +532,7 @@ export default function DashboardLayout({ children }: Readonly<{ children: React
 Run:
 
 ```bash
-cd /home/venusai/Desktop/skill-enhance/newsletter-ai && npm run build
+cd /home/venusai/Desktop/skill-enhance/newsletter-ai && pnpm run build
 ```
 
 Expected: PASS.
@@ -651,7 +651,7 @@ export default function TopicsError({
 
 - [ ] **Step 3: Manual smoke**
 
-Run `npm run dev`, sign in, open a valid newsletter topics URL: initial load should show topics without a visible “loading flash” when prefetch succeeds. Open a bogus id: error boundary UI should appear.
+Run `pnpm run dev`, sign in, open a valid newsletter topics URL: initial load should show topics without a visible “loading flash” when prefetch succeeds. Open a bogus id: error boundary UI should appear.
 
 - [ ] **Step 4: Commit**
 
@@ -745,7 +745,7 @@ Wire **Save** button to `saveMutation.mutate(topics)` and show `saveMutation.err
 Run:
 
 ```bash
-cd /home/venusai/Desktop/skill-enhance/newsletter-ai && npm run test && npm run build
+cd /home/venusai/Desktop/skill-enhance/newsletter-ai && pnpm run test && pnpm run build
 ```
 
 Expected: all pass.
@@ -786,7 +786,7 @@ Copy topics `error.tsx`, change log prefix to `[draft]`.
 - [ ] **Step 4: Run tests + build**
 
 ```bash
-cd /home/venusai/Desktop/skill-enhance/newsletter-ai && npm run test && npm run build
+cd /home/venusai/Desktop/skill-enhance/newsletter-ai && pnpm run test && pnpm run build
 ```
 
 - [ ] **Step 5: Commit**
@@ -805,7 +805,7 @@ git commit -m "feat(draft): hydrate newsletter query and refactor editor with mu
 Run:
 
 ```bash
-cd /home/venusai/Desktop/skill-enhance/newsletter-ai && npm run lint
+cd /home/venusai/Desktop/skill-enhance/newsletter-ai && pnpm run lint
 ```
 
 Fix any new issues in touched files.

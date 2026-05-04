@@ -1,132 +1,112 @@
 "use client";
 
-import Link from "next/link";
-import { startTransition, useCallback, useEffect, useState } from "react";
+import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  type NewsletterDetailPayload,
+  fetchNewsletterDetail,
+} from "@/lib/query/fetch-newsletter-detail";
+import { newsletterDetailQueryKey } from "@/lib/query/newsletter-keys";
+
+function draftStateKey(d: NewsletterDetailPayload) {
+  return `${d.newsletter.updatedAt}|${d.newsletter.status}|${(d.newsletter.finalDraft ?? "").length}`;
+}
 
 export function DraftEditor({ newsletterId }: { newsletterId: string }) {
-  const [status, setStatus] = useState<string | null>(null);
-  const [draftText, setDraftText] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [generating, setGenerating] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [publishing, setPublishing] = useState(false);
+  const { data } = useSuspenseQuery({
+    queryKey: newsletterDetailQueryKey(newsletterId),
+    queryFn: ({ signal }) => fetchNewsletterDetail(newsletterId, { signal }),
+  });
+
+  const dk = useMemo(() => draftStateKey(data), [data]);
+
+  return (
+    <DraftEditorFields
+      key={dk}
+      newsletterId={newsletterId}
+      initialDraft={data.newsletter.finalDraft ?? ""}
+      status={data.newsletter.status}
+    />
+  );
+}
+
+function DraftEditorFields({
+  newsletterId,
+  initialDraft,
+  status,
+}: {
+  newsletterId: string;
+  initialDraft: string;
+  status: string;
+}) {
+  const queryClient = useQueryClient();
+  const [draftText, setDraftText] = useState(initialDraft);
   const [publishOk, setPublishOk] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [notFound, setNotFound] = useState(false);
 
-  const load = useCallback(async () => {
-    setError(null);
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/newsletters/${newsletterId}`);
-      const data = await res.json().catch(() => ({}));
-      if (res.status === 404) {
-        setNotFound(true);
-        setStatus(null);
-        setDraftText("");
-        return;
-      }
-      if (!res.ok) {
-        setError("Could not load newsletter.");
-        return;
-      }
-      const nl = data.newsletter as {
-        status?: string;
-        finalDraft?: string | null;
-      };
-      setStatus(nl.status ?? null);
-      setDraftText(nl.finalDraft ?? "");
-    } finally {
-      setLoading(false);
-    }
-  }, [newsletterId]);
-
-  useEffect(() => {
-    startTransition(() => {
-      void load();
-    });
-  }, [load]);
-
-  async function generateDraft() {
-    setGenerating(true);
-    setError(null);
-    setPublishOk(null);
-    try {
+  const generateMutation = useMutation({
+    mutationFn: async () => {
       const res = await fetch("/api/generate-draft", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ newsletterId }),
       });
-      const data = await res.json().catch(() => ({}));
+      const body = (await res.json().catch(() => ({}))) as { error?: string; draft?: string };
       if (!res.ok) {
-        setError(
-          typeof data.error === "string"
-            ? data.error
-            : "Failed to generate draft.",
+        throw new Error(
+          typeof body.error === "string" ? body.error : "Failed to generate draft.",
         );
-        return;
       }
-      const draft = typeof data.draft === "string" ? data.draft : "";
+      return typeof body.draft === "string" ? body.draft : "";
+    },
+    onSuccess: (draft) => {
       setDraftText(draft);
-      await load();
-    } finally {
-      setGenerating(false);
-    }
-  }
+      setPublishOk(null);
+      void queryClient.invalidateQueries({
+        queryKey: newsletterDetailQueryKey(newsletterId),
+      });
+    },
+  });
 
-  async function saveDraft() {
-    setSaving(true);
-    setError(null);
-    setPublishOk(null);
-    try {
+  const saveMutation = useMutation({
+    mutationFn: async (text: string) => {
       const res = await fetch(`/api/newsletters/${newsletterId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ finalDraft: draftText }),
+        body: JSON.stringify({ finalDraft: text }),
       });
-      const data = await res.json().catch(() => ({}));
+      const body = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) {
-        setError(
-          typeof data.error === "string" ? data.error : "Failed to save draft.",
+        throw new Error(
+          typeof body.error === "string" ? body.error : "Failed to save draft.",
         );
-        return;
       }
-      await load();
-    } finally {
-      setSaving(false);
-    }
-  }
+    },
+    onSuccess: () => {
+      setPublishOk(null);
+      void queryClient.invalidateQueries({
+        queryKey: newsletterDetailQueryKey(newsletterId),
+      });
+    },
+  });
 
-  const draftTrimmed = draftText.trim();
-  const canPublish =
-    draftTrimmed.length > 0 &&
-    status !== "PUBLISHED" &&
-    status !== "RESEARCHING" &&
-    (status === "DRAFTING" || status === "REVIEWING");
-
-  async function publishDraft() {
-    setPublishing(true);
-    setError(null);
-    setPublishOk(null);
-    try {
+  const publishMutation = useMutation({
+    mutationFn: async (text: string) => {
       const saveRes = await fetch(`/api/newsletters/${newsletterId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ finalDraft: draftText }),
+        body: JSON.stringify({ finalDraft: text }),
       });
-      const saveData = await saveRes.json().catch(() => ({}));
+      const saveData = (await saveRes.json().catch(() => ({}))) as { error?: string };
       if (!saveRes.ok) {
-        setError(
+        throw new Error(
           typeof saveData.error === "string"
             ? saveData.error
             : "Could not save draft before publishing.",
         );
-        return;
       }
 
       const pubRes = await fetch("/api/publish", {
@@ -134,41 +114,30 @@ export function DraftEditor({ newsletterId }: { newsletterId: string }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ newsletterId }),
       });
-      const pubData = await pubRes.json().catch(() => ({}));
+      const pubData = (await pubRes.json().catch(() => ({}))) as { error?: string };
       if (!pubRes.ok) {
-        setError(
+        throw new Error(
           typeof pubData.error === "string" ? pubData.error : "Publish failed.",
         );
-        return;
       }
+    },
+    onSuccess: () => {
       setPublishOk("Published successfully.");
-      await load();
-    } finally {
-      setPublishing(false);
-    }
-  }
+      void queryClient.invalidateQueries({
+        queryKey: newsletterDetailQueryKey(newsletterId),
+      });
+    },
+  });
 
-  if (loading) {
-    return (
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Spinner />
-        Loading…
-      </div>
-    );
-  }
+  const mutationError =
+    generateMutation.error ?? saveMutation.error ?? publishMutation.error;
 
-  if (notFound) {
-    return (
-      <Alert variant="destructive">
-        <AlertDescription className="flex flex-col gap-3">
-          <span>Newsletter not found.</span>
-          <Button variant="outline" size="sm" className="w-fit" asChild>
-            <Link href="/dashboard">Back to dashboard</Link>
-          </Button>
-        </AlertDescription>
-      </Alert>
-    );
-  }
+  const draftTrimmed = draftText.trim();
+  const canPublish =
+    draftTrimmed.length > 0 &&
+    status !== "PUBLISHED" &&
+    status !== "RESEARCHING" &&
+    (status === "DRAFTING" || status === "REVIEWING");
 
   return (
     <div className="flex flex-col gap-4">
@@ -181,9 +150,11 @@ export function DraftEditor({ newsletterId }: { newsletterId: string }) {
         </div>
       ) : null}
 
-      {error ? (
+      {mutationError ? (
         <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
+          <AlertDescription>
+            {mutationError instanceof Error ? mutationError.message : "Request failed."}
+          </AlertDescription>
         </Alert>
       ) : null}
 
@@ -196,27 +167,32 @@ export function DraftEditor({ newsletterId }: { newsletterId: string }) {
       <div className="flex flex-wrap gap-2">
         <Button
           type="button"
-          disabled={generating}
-          onClick={() => void generateDraft()}
+          disabled={generateMutation.isPending}
+          onClick={() => generateMutation.mutate()}
         >
-          {generating ? "Generating…" : "Generate draft"}
+          {generateMutation.isPending ? "Generating…" : "Generate draft"}
         </Button>
         <Button
           type="button"
           variant="outline"
-          disabled={saving}
-          onClick={() => void saveDraft()}
+          disabled={saveMutation.isPending}
+          onClick={() => saveMutation.mutate(draftText)}
         >
-          {saving ? "Saving…" : "Save draft"}
+          {saveMutation.isPending ? "Saving…" : "Save draft"}
         </Button>
         <Button
           type="button"
           variant="outline"
-          disabled={publishing || generating || saving || !canPublish}
+          disabled={
+            publishMutation.isPending ||
+            generateMutation.isPending ||
+            saveMutation.isPending ||
+            !canPublish
+          }
           className="border-emerald-600 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-600 dark:text-emerald-400 dark:hover:bg-emerald-950/40"
-          onClick={() => void publishDraft()}
+          onClick={() => publishMutation.mutate(draftText)}
         >
-          {publishing ? "Publishing…" : "Publish"}
+          {publishMutation.isPending ? "Publishing…" : "Publish"}
         </Button>
       </div>
 

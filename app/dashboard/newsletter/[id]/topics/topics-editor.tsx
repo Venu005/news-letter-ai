@@ -1,72 +1,67 @@
 "use client";
 
-import Link from "next/link";
+import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { startTransition, useCallback, useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  type NewsletterDetailPayload,
+  type TopicRow,
+  fetchNewsletterDetail,
+} from "@/lib/query/fetch-newsletter-detail";
+import { newsletterDetailQueryKey } from "@/lib/query/newsletter-keys";
 
-export type TopicRow = {
-  id: string;
-  title: string;
-  summary: string;
-  sourceUrl: string;
-  isApproved: boolean;
-  newsletterId: string;
-};
+export type { TopicRow };
+
+function topicsFingerprint(d: NewsletterDetailPayload) {
+  return `${d.newsletter.updatedAt}|${d.topics
+    .map((t) => [t.id, t.title, t.summary, t.sourceUrl, t.isApproved].join("\u0001"))
+    .join("\u0002")}`;
+}
 
 export function TopicsEditor({ newsletterId }: { newsletterId: string }) {
+  const { data } = useSuspenseQuery({
+    queryKey: newsletterDetailQueryKey(newsletterId),
+    queryFn: ({ signal }) => fetchNewsletterDetail(newsletterId, { signal }),
+  });
+
+  const fp = useMemo(() => topicsFingerprint(data), [data]);
+
+  return (
+    <TopicsEditorForm
+      key={fp}
+      newsletterId={newsletterId}
+      initialTopics={data.topics}
+      initialNiche={data.newsletter.niche ?? null}
+    />
+  );
+}
+
+function TopicsEditorForm({
+  newsletterId,
+  initialTopics,
+  initialNiche,
+}: {
+  newsletterId: string;
+  initialTopics: TopicRow[];
+  initialNiche: string | null;
+}) {
   const router = useRouter();
-  const [topics, setTopics] = useState<TopicRow[]>([]);
-  const [niche, setNiche] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
+  const queryClient = useQueryClient();
+  const [topics, setTopics] = useState(initialTopics);
+  const niche = initialNiche;
 
-  const load = useCallback(async () => {
-    setError(null);
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/newsletters/${newsletterId}`);
-      const data = await res.json().catch(() => ({}));
-      if (res.status === 404) {
-        setError(typeof data.error === "string" ? data.error : "Newsletter not found.");
-        setTopics([]);
-        setNiche(null);
-        return;
-      }
-      if (!res.ok) {
-        setError("Could not load newsletter.");
-        return;
-      }
-      const nl = data.newsletter as { niche?: string };
-      setNiche(nl.niche ?? null);
-      setTopics(data.topics as TopicRow[]);
-    } finally {
-      setLoading(false);
-    }
-  }, [newsletterId]);
-
-  useEffect(() => {
-    startTransition(() => {
-      void load();
-    });
-  }, [load]);
-
-  async function saveTopics() {
-    if (topics.length === 0) return;
-    setSaving(true);
-    setError(null);
-    try {
+  const saveMutation = useMutation({
+    mutationFn: async (payload: TopicRow[]) => {
       const res = await fetch(`/api/newsletters/${newsletterId}/topics`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          topics: topics.map((t) => ({
+          topics: payload.map((t) => ({
             id: t.id,
             title: t.title,
             summary: t.summary,
@@ -75,43 +70,31 @@ export function TopicsEditor({ newsletterId }: { newsletterId: string }) {
           })),
         }),
       });
-      const data = await res.json().catch(() => ({}));
+      const body = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        topics?: TopicRow[];
+      };
       if (!res.ok) {
-        setError(typeof data.error === "string" ? data.error : "Failed to save topics.");
-        return;
+        throw new Error(
+          typeof body.error === "string" ? body.error : "Failed to save topics.",
+        );
       }
-      setTopics(data.topics as TopicRow[]);
-    } finally {
-      setSaving(false);
-    }
-  }
+      if (!body.topics) {
+        throw new Error("Invalid save response.");
+      }
+      return body.topics;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: newsletterDetailQueryKey(newsletterId),
+      });
+    },
+  });
 
   const hasApproved = topics.some((t) => t.isApproved);
 
   function updateTopic(id: string, patch: Partial<TopicRow>) {
     setTopics((prev) => prev.map((t) => (t.id === id ? { ...t, ...patch } : t)));
-  }
-
-  if (loading) {
-    return (
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Spinner />
-        Loading topics…
-      </div>
-    );
-  }
-
-  if (error && topics.length === 0 && !loading) {
-    return (
-      <Alert variant="destructive">
-        <AlertDescription className="flex flex-col gap-3">
-          <span>{error}</span>
-          <Button variant="outline" size="sm" className="w-fit" asChild>
-            <Link href="/dashboard">Back to dashboard</Link>
-          </Button>
-        </AlertDescription>
-      </Alert>
-    );
   }
 
   return (
@@ -122,9 +105,13 @@ export function TopicsEditor({ newsletterId }: { newsletterId: string }) {
         </p>
       ) : null}
 
-      {error ? (
+      {saveMutation.error ? (
         <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
+          <AlertDescription>
+            {saveMutation.error instanceof Error
+              ? saveMutation.error.message
+              : "Failed to save topics."}
+          </AlertDescription>
         </Alert>
       ) : null}
 
@@ -175,8 +162,12 @@ export function TopicsEditor({ newsletterId }: { newsletterId: string }) {
       </div>
 
       <div className="flex flex-wrap gap-2">
-        <Button type="button" disabled={saving || topics.length === 0} onClick={() => void saveTopics()}>
-          {saving ? "Saving…" : "Save changes"}
+        <Button
+          type="button"
+          disabled={saveMutation.isPending || topics.length === 0}
+          onClick={() => saveMutation.mutate(topics)}
+        >
+          {saveMutation.isPending ? "Saving…" : "Save changes"}
         </Button>
         <Button
           type="button"

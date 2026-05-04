@@ -1,6 +1,19 @@
 import Link from "next/link";
+import { HydrationBoundary } from "@tanstack/react-query";
+import { Suspense } from "react";
 import { DraftEditor } from "./draft-editor";
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
+import { getNewsletterDehydratedState } from "@/lib/query/prefetch-newsletter-detail";
+
+function DraftEditorFallback() {
+  return (
+    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+      <Spinner />
+      Loading…
+    </div>
+  );
+}
 
 export default async function DraftPage({
   params,
@@ -8,6 +21,8 @@ export default async function DraftPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const dehydratedState = await getNewsletterDehydratedState(id);
+
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-10">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -21,7 +36,11 @@ export default async function DraftPage({
           </Button>
         </div>
       </div>
-      <DraftEditor newsletterId={id} />
+      <HydrationBoundary state={dehydratedState}>
+        <Suspense fallback={<DraftEditorFallback />}>
+          <DraftEditor newsletterId={id} />
+        </Suspense>
+      </HydrationBoundary>
     </div>
   );
 }
