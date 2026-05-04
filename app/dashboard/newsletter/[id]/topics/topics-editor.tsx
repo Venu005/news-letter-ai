@@ -98,7 +98,7 @@ function TopicsEditorForm({
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-intel-stack-lg">
       {niche ? (
         <p className="text-sm text-muted-foreground">
           Niche: <span className="font-medium text-foreground">{niche}</span>
@@ -115,11 +115,11 @@ function TopicsEditorForm({
         </Alert>
       ) : null}
 
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-intel-stack-md">
         {topics.map((t) => (
           <Card key={t.id} size="sm">
-            <CardContent className="flex flex-col gap-3 pt-6">
-              <div className="flex flex-col gap-2">
+            <CardContent className="flex flex-col gap-intel-stack-md pt-6">
+              <div className="flex flex-col gap-intel-stack-sm">
                 <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                   Title
                 </span>
@@ -128,7 +128,7 @@ function TopicsEditorForm({
                   onChange={(e) => updateTopic(t.id, { title: e.target.value })}
                 />
               </div>
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-intel-stack-sm">
                 <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                   Summary
                 </span>
@@ -138,7 +138,7 @@ function TopicsEditorForm({
                   onChange={(e) => updateTopic(t.id, { summary: e.target.value })}
                 />
               </div>
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-intel-stack-sm">
                 <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                   Source URL
                 </span>
@@ -147,7 +147,7 @@ function TopicsEditorForm({
                   onChange={(e) => updateTopic(t.id, { sourceUrl: e.target.value })}
                 />
               </div>
-              <label className="flex items-center gap-2 text-sm">
+              <label className="text-foreground flex items-center gap-intel-stack-sm text-sm">
                 <input
                   type="checkbox"
                   checked={t.isApproved}
@@ -161,7 +161,7 @@ function TopicsEditorForm({
         ))}
       </div>
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-intel-stack-sm">
         <Button
           type="button"
           disabled={saveMutation.isPending || topics.length === 0}

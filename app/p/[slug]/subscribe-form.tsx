@@ -35,9 +35,9 @@ export function SubscribeForm({ slug }: { slug: string }) {
   }
 
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-4">
-      <div className="flex flex-col gap-2">
-        <span className="text-sm font-medium">Email</span>
+    <form onSubmit={onSubmit} className="flex flex-col gap-intel-stack-md">
+      <div className="flex flex-col gap-intel-stack-sm">
+        <span className="text-foreground text-sm font-medium">Email</span>
         <Input
           type="email"
           required

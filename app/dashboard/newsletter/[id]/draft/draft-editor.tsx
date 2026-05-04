@@ -140,9 +140,9 @@ function DraftEditorFields({
     (status === "DRAFTING" || status === "REVIEWING");
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-intel-stack-md">
       {status ? (
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-intel-stack-sm">
           <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
             Status
           </span>
@@ -164,7 +164,7 @@ function DraftEditorFields({
         </Alert>
       ) : null}
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-intel-stack-sm">
         <Button
           type="button"
           disabled={generateMutation.isPending}
@@ -182,22 +182,21 @@ function DraftEditorFields({
         </Button>
         <Button
           type="button"
-          variant="outline"
+          variant="default"
           disabled={
             publishMutation.isPending ||
             generateMutation.isPending ||
             saveMutation.isPending ||
             !canPublish
           }
-          className="border-emerald-600 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-600 dark:text-emerald-400 dark:hover:bg-emerald-950/40"
           onClick={() => publishMutation.mutate(draftText)}
         >
           {publishMutation.isPending ? "Publishing…" : "Publish"}
         </Button>
       </div>
 
-      <div className="flex flex-col gap-2">
-        <span className="text-sm font-medium">Markdown</span>
+      <div className="flex flex-col gap-intel-stack-sm">
+        <span className="text-foreground text-sm font-medium">Markdown</span>
         <Textarea
           rows={18}
           className="min-h-112 font-mono text-sm"

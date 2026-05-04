@@ -25,10 +25,10 @@ export default async function PublicNewsletterPage(props: { params: Promise<{ sl
   const title = newsletter.displayName ?? newsletter.niche;
 
   return (
-    <main className="mx-auto flex max-w-xl flex-col gap-6 p-8">
+    <main className="mx-auto flex max-w-xl flex-col gap-intel-stack-lg px-intel-margin py-intel-stack-lg">
       <Card>
         <CardHeader>
-          <CardTitle className="text-2xl">{title}</CardTitle>
+          <CardTitle className="text-foreground text-2xl">{title}</CardTitle>
           {newsletter.tagline ? <CardDescription>{newsletter.tagline}</CardDescription> : null}
         </CardHeader>
         <CardContent>

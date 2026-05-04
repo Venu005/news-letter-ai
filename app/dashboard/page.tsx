@@ -25,9 +25,11 @@ export default async function DashboardPage() {
   });
 
   return (
-    <main className="mx-auto flex w-full max-w-2xl flex-col gap-10 px-8 py-8">
-      <section className="space-y-4">
-        <h2 className="text-lg font-semibold tracking-tight">Your newsletters</h2>
+    <main className="mx-auto flex w-full max-w-2xl flex-col gap-intel-stack-lg px-intel-margin py-intel-stack-lg">
+      <section className="space-y-intel-stack-md">
+        <h2 className="text-foreground text-lg font-semibold tracking-tight">
+          Your newsletters
+        </h2>
         {newsletters.length === 0 ? (
           <Card>
             <CardContent className="pt-6">
@@ -37,19 +39,19 @@ export default async function DashboardPage() {
             </CardContent>
           </Card>
         ) : (
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-intel-stack-md">
             {newsletters.map((n) => (
               <Card key={n.id} size="sm">
-                <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3 space-y-0">
+                <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-intel-stack-md space-y-0">
                   <div className="min-w-0 space-y-1">
-                    <CardTitle className="text-base">{n.niche}</CardTitle>
+                    <CardTitle className="text-foreground text-base">{n.niche}</CardTitle>
                     <CardDescription>
                       {n.slug ? `Public: /p/${n.slug}` : "Slug missing — run backfill"}
                     </CardDescription>
                   </div>
                   <Badge variant="secondary">{n.status}</Badge>
                 </CardHeader>
-                <CardContent className="flex flex-wrap gap-2 pt-0">
+                <CardContent className="flex flex-wrap gap-intel-stack-sm pt-0">
                   <Button variant="outline" size="sm" asChild>
                     <Link href={`/dashboard/newsletter/${n.id}/topics`}>Edit</Link>
                   </Button>
@@ -69,8 +71,10 @@ export default async function DashboardPage() {
 
       <Separator />
 
-      <section className="space-y-4">
-        <h2 className="text-lg font-semibold tracking-tight">Create newsletter</h2>
+      <section className="space-y-intel-stack-md">
+        <h2 className="text-foreground text-lg font-semibold tracking-tight">
+          Create newsletter
+        </h2>
         <HomeForm topicsPathPrefix="/dashboard/newsletter" />
       </section>
     </main>

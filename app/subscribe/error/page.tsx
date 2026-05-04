@@ -5,10 +5,10 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 
 export default function SubscribeErrorPage() {
   return (
-    <main className="mx-auto flex max-w-md flex-col gap-6 p-8">
+    <main className="mx-auto flex max-w-md flex-col gap-intel-stack-lg px-intel-margin py-intel-stack-lg">
       <Card>
         <CardHeader>
-          <CardTitle>Link invalid or expired</CardTitle>
+          <CardTitle className="text-foreground">Link invalid or expired</CardTitle>
         </CardHeader>
         <CardContent>
           <Alert variant="destructive">

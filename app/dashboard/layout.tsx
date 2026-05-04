@@ -7,8 +7,8 @@ import { Separator } from "@/components/ui/separator";
 export default function DashboardLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <QueryProvider>
-    <div className="flex min-h-full flex-col">
-      <header className="flex items-center justify-end gap-3 border-b px-8 py-4">
+    <div className="bg-background flex min-h-full flex-col">
+      <header className="border-border bg-background/95 flex items-center justify-end gap-intel-stack-sm border-b px-intel-margin py-intel-stack-md backdrop-blur-sm">
         <Button variant="ghost" size="sm" asChild>
           <Link href="/">Home</Link>
         </Button>

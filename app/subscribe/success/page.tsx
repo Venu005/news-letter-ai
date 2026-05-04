@@ -5,10 +5,10 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 
 export default function SubscribeSuccessPage() {
   return (
-    <main className="mx-auto flex max-w-md flex-col gap-6 p-8">
+    <main className="mx-auto flex max-w-md flex-col gap-intel-stack-lg px-intel-margin py-intel-stack-lg">
       <Card>
         <CardHeader>
-          <CardTitle>You are subscribed</CardTitle>
+          <CardTitle className="text-foreground">You are subscribed</CardTitle>
         </CardHeader>
         <CardContent>
           <Alert>

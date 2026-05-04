@@ -8,7 +8,7 @@ import { getNewsletterDehydratedState } from "@/lib/query/prefetch-newsletter-de
 
 function DraftEditorFallback() {
   return (
-    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+    <div className="flex items-center gap-intel-stack-sm text-sm text-muted-foreground">
       <Spinner />
       Loading…
     </div>
@@ -24,10 +24,10 @@ export default async function DraftPage({
   const dehydratedState = await getNewsletterDehydratedState(id);
 
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-10">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-2xl font-semibold tracking-tight">Draft</h1>
-        <div className="flex flex-wrap gap-2">
+    <div className="mx-auto flex w-full max-w-3xl flex-col gap-intel-stack-lg px-intel-gutter py-intel-stack-lg">
+      <div className="flex flex-wrap items-center justify-between gap-intel-stack-md">
+        <h1 className="text-foreground text-2xl font-semibold tracking-tight">Draft</h1>
+        <div className="flex flex-wrap gap-intel-stack-sm">
           <Button variant="outline" size="sm" asChild>
             <Link href={`/dashboard/newsletter/${id}/topics`}>Back to topics</Link>
           </Button>

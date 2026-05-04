@@ -20,15 +20,15 @@ export default function TopicsError({
   const is404 = error instanceof NewsletterNotFoundError;
 
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-10">
+    <div className="mx-auto flex w-full max-w-3xl flex-col gap-intel-stack-lg px-intel-gutter py-intel-stack-lg">
       <Alert variant="destructive">
-        <AlertDescription className="flex flex-col gap-3">
+        <AlertDescription className="flex flex-col gap-intel-stack-md">
           <span>
             {is404
               ? error.message
               : "Something went wrong loading this newsletter."}
           </span>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-intel-stack-sm">
             <Button variant="outline" size="sm" onClick={() => reset()}>
               Try again
             </Button>
