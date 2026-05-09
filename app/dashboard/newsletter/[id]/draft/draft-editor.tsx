@@ -1,6 +1,10 @@
 "use client";
 
-import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQueryClient,
+  useSuspenseQuery,
+} from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -54,10 +58,15 @@ function DraftEditorFields({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ newsletterId }),
       });
-      const body = (await res.json().catch(() => ({}))) as { error?: string; draft?: string };
+      const body = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        draft?: string;
+      };
       if (!res.ok) {
         throw new Error(
-          typeof body.error === "string" ? body.error : "Failed to generate draft.",
+          typeof body.error === "string"
+            ? body.error
+            : "Failed to generate draft.",
         );
       }
       return typeof body.draft === "string" ? body.draft : "";
@@ -100,7 +109,9 @@ function DraftEditorFields({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ finalDraft: text }),
       });
-      const saveData = (await saveRes.json().catch(() => ({}))) as { error?: string };
+      const saveData = (await saveRes.json().catch(() => ({}))) as {
+        error?: string;
+      };
       if (!saveRes.ok) {
         throw new Error(
           typeof saveData.error === "string"
@@ -114,7 +125,9 @@ function DraftEditorFields({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ newsletterId }),
       });
-      const pubData = (await pubRes.json().catch(() => ({}))) as { error?: string };
+      const pubData = (await pubRes.json().catch(() => ({}))) as {
+        error?: string;
+      };
       if (!pubRes.ok) {
         throw new Error(
           typeof pubData.error === "string" ? pubData.error : "Publish failed.",
@@ -153,7 +166,9 @@ function DraftEditorFields({
       {mutationError ? (
         <Alert variant="destructive">
           <AlertDescription>
-            {mutationError instanceof Error ? mutationError.message : "Request failed."}
+            {mutationError instanceof Error
+              ? mutationError.message
+              : "Request failed."}
           </AlertDescription>
         </Alert>
       ) : null}

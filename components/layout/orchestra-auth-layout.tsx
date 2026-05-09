@@ -4,10 +4,10 @@ import { ORCHESTRA_HERO_VIDEO_URL } from "@/lib/orchestra-hero-video";
 
 type OrchestraAuthLayoutProps = {
   children: React.ReactNode;
-  /** Left panel serif line (over video). */
+  /** Left panel headline (Instrument Serif). */
   visualHeadline: string;
-  /** Left panel body line (over video). */
-  visualDescription: string;
+  /** Left panel supporting line. */
+  visualSubline: string;
   /** Shown above the Clerk form (Instrument Serif). */
   panelTitle: string;
   /** Supporting line under the title (Inter). */
@@ -21,7 +21,7 @@ type OrchestraAuthLayoutProps = {
 export function OrchestraAuthLayout({
   children,
   visualHeadline,
-  visualDescription,
+  visualSubline,
   panelTitle,
   panelDescription,
 }: OrchestraAuthLayoutProps) {
@@ -52,7 +52,7 @@ export function OrchestraAuthLayout({
             {visualHeadline}
           </p>
           <p className="mt-2 max-w-md text-sm leading-relaxed text-white/85">
-            {visualDescription}
+            {visualSubline}
           </p>
         </div>
       </aside>

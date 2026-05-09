@@ -47,7 +47,9 @@ async function sendViaResend(params: {
     return { ok: false };
   }
 
-  const payload = (await response.json().catch(() => null)) as { id?: string } | null;
+  const payload = (await response.json().catch(() => null)) as {
+    id?: string;
+  } | null;
   const messageId = typeof payload?.id === "string" ? payload.id : undefined;
   return { ok: true, messageId };
 }
@@ -68,7 +70,10 @@ export async function POST(req: Request) {
   const json = await req.json().catch(() => null);
   const parsed = publishBodySchema.safeParse(json);
   if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Invalid request body." },
+      { status: 400 },
+    );
   }
 
   let recipient = parsed.data.to?.trim();
@@ -91,7 +96,10 @@ export async function POST(req: Request) {
   });
 
   if (!newsletter) {
-    return NextResponse.json({ error: "Newsletter not found." }, { status: 404 });
+    return NextResponse.json(
+      { error: "Newsletter not found." },
+      { status: 404 },
+    );
   }
 
   if (newsletter.status === "PUBLISHED") {
