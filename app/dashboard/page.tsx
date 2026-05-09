@@ -25,15 +25,15 @@ export default async function DashboardPage() {
   });
 
   return (
-    <main className="mx-auto flex w-full max-w-2xl flex-col gap-intel-stack-lg px-intel-margin py-intel-stack-lg">
+    <main className="mx-auto flex w-full max-w-2xl flex-col gap-intel-stack-lg px-8 py-10">
       <section className="space-y-intel-stack-md">
-        <h2 className="text-foreground text-lg font-semibold tracking-tight">
+        <h2 className="orchestra-heading text-2xl font-normal tracking-tight text-black">
           Your newsletters
         </h2>
         {newsletters.length === 0 ? (
           <Card>
             <CardContent className="pt-6">
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-[#6F6F6F]">
                 No newsletters yet — create one below.
               </p>
             </CardContent>
@@ -44,8 +44,10 @@ export default async function DashboardPage() {
               <Card key={n.id} size="sm">
                 <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-intel-stack-md space-y-0">
                   <div className="min-w-0 space-y-1">
-                    <CardTitle className="text-foreground text-base">{n.niche}</CardTitle>
-                    <CardDescription>
+                    <CardTitle className="text-base font-medium text-black">
+                      {n.niche}
+                    </CardTitle>
+                    <CardDescription className="text-[#6F6F6F]">
                       {n.slug ? `Public: /p/${n.slug}` : "Slug missing — run backfill"}
                     </CardDescription>
                   </div>
@@ -69,10 +71,10 @@ export default async function DashboardPage() {
         )}
       </section>
 
-      <Separator />
+      <Separator className="bg-black/10" />
 
       <section className="space-y-intel-stack-md">
-        <h2 className="text-foreground text-lg font-semibold tracking-tight">
+        <h2 className="orchestra-heading text-2xl font-normal tracking-tight text-black">
           Create newsletter
         </h2>
         <HomeForm topicsPathPrefix="/dashboard/newsletter" />

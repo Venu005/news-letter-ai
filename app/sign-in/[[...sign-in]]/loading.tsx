@@ -1,10 +1,7 @@
-import { SignIn } from "@clerk/nextjs";
-import { Suspense } from "react";
 import { AuthFormFallback } from "@/components/auth/auth-form-fallback";
 import { OrchestraAuthLayout } from "@/components/layout/orchestra-auth-layout";
-import { clerkAuthPanelAppearance } from "@/lib/clerk-auth-appearance";
 
-export default function SignInPage() {
+export default function SignInLoading() {
   return (
     <OrchestraAuthLayout
       visualHeadline="Pick up right where you left off."
@@ -12,14 +9,7 @@ export default function SignInPage() {
       panelTitle="Welcome back"
       panelDescription="Sign in to open your studio and continue editing newsletters, topics, and drafts."
     >
-      <Suspense fallback={<AuthFormFallback />}>
-        <SignIn
-          routing="path"
-          path="/sign-in"
-          signUpUrl="/sign-up"
-          appearance={clerkAuthPanelAppearance}
-        />
-      </Suspense>
+      <AuthFormFallback />
     </OrchestraAuthLayout>
   );
 }

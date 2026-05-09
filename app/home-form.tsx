@@ -48,7 +48,7 @@ export function HomeForm({
   return (
     <form onSubmit={onSubmit} className="flex w-full max-w-md flex-col gap-intel-stack-md">
       <div className="flex flex-col gap-intel-stack-sm">
-        <span className="text-foreground text-sm font-medium">Niche</span>
+        <span className="text-sm font-medium text-black">Niche</span>
         <Input
           value={niche}
           onChange={(e) => setNiche(e.target.value)}

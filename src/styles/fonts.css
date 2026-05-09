@@ -1,0 +1,11 @@
+/* Instrument Serif and Inter are injected on <html> in app/layout.tsx via next/font/google.
+   Use these aliases on the cinematic hero for display vs body roles. */
+:root {
+  --font-hero-display: var(--font-instrument-serif), serif;
+  --font-hero-body: var(--font-orchestra-inter), ui-sans-serif, system-ui,
+    sans-serif;
+}
+
+.orchestra-heading {
+  font-family: var(--font-hero-display), serif;
+}
