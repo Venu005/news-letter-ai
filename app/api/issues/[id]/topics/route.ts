@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireInternalUserId } from "@/lib/current-user";
-import { newsletterBelongsToUser } from "@/lib/newsletter-owner";
+import { issueOwnedBy } from "@/lib/issue-owner";
 import { prisma } from "@/lib/prisma";
+import type { Topic } from "@/lib/types/topic";
 
 const topicRowSchema = z.object({
   id: z.string().uuid(),
@@ -16,6 +17,44 @@ const patchTopicsSchema = z.object({
   topics: z.array(topicRowSchema).min(1),
 });
 
+function mapTopic(row: {
+  id: string;
+  title: string;
+  summary: string;
+  sourceUrl: string;
+  isApproved: boolean;
+  issueId: string;
+}): Topic {
+  return {
+    id: row.id,
+    title: row.title,
+    summary: row.summary,
+    sourceUrl: row.sourceUrl,
+    isApproved: row.isApproved,
+    issueId: row.issueId,
+  };
+}
+
+export async function GET(
+  _req: Request,
+  ctx: { params: Promise<{ id: string }> },
+) {
+  const authResult = await requireInternalUserId();
+  if (!authResult.ok) return authResult.response;
+
+  const { id } = await ctx.params;
+  const owner = await issueOwnedBy(id, authResult.userId);
+  if (!owner) {
+    return NextResponse.json({ error: "Issue not found." }, { status: 404 });
+  }
+
+  const topics = await prisma.topic.findMany({
+    where: { issueId: id },
+    orderBy: { title: "asc" },
+  });
+  return NextResponse.json({ topics: topics.map(mapTopic) });
+}
+
 export async function PATCH(
   req: Request,
   ctx: { params: Promise<{ id: string }> },
@@ -23,11 +62,10 @@ export async function PATCH(
   const authResult = await requireInternalUserId();
   if (!authResult.ok) return authResult.response;
 
-  const { id: newsletterId } = await ctx.params;
-
-  const ok = await newsletterBelongsToUser(newsletterId, authResult.userId);
-  if (!ok) {
-    return NextResponse.json({ error: "Newsletter not found." }, { status: 404 });
+  const { id: issueId } = await ctx.params;
+  const owner = await issueOwnedBy(issueId, authResult.userId);
+  if (!owner) {
+    return NextResponse.json({ error: "Issue not found." }, { status: 404 });
   }
 
   const json = await req.json().catch(() => null);
@@ -40,14 +78,14 @@ export async function PATCH(
   }
 
   const existing = await prisma.topic.findMany({
-    where: { newsletterId },
+    where: { issueId },
     select: { id: true },
   });
   const allowed = new Set(existing.map((t) => t.id));
   for (const row of parsed.data.topics) {
     if (!allowed.has(row.id)) {
       return NextResponse.json(
-        { error: `Topic ${row.id} does not belong to this newsletter.` },
+        { error: `Topic ${row.id} does not belong to this issue.` },
         { status: 400 },
       );
     }
@@ -68,18 +106,9 @@ export async function PATCH(
   );
 
   const topics = await prisma.topic.findMany({
-    where: { newsletterId },
+    where: { issueId },
     orderBy: { title: "asc" },
   });
 
-  return NextResponse.json({
-    topics: topics.map((t) => ({
-      id: t.id,
-      title: t.title,
-      summary: t.summary,
-      sourceUrl: t.sourceUrl,
-      isApproved: t.isApproved,
-      newsletterId: t.newsletterId,
-    })),
-  });
+  return NextResponse.json({ topics: topics.map(mapTopic) });
 }
