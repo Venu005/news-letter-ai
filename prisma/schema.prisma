@@ -22,20 +22,34 @@ model User {
 }
 
 model Newsletter {
-  id             String       @id @default(uuid())
+  id          String       @id @default(uuid())
+  userId      String?
+  user        User?        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  slug        String?      @unique
+  tagline     String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  issues      Issue[]
+  subscribers Subscriber[]
+}
+
+model Issue {
+  id             String     @id @default(uuid())
+  newsletterId   String
+  newsletter     Newsletter @relation(fields: [newsletterId], references: [id], onDelete: Cascade)
   niche          String
-  mastraThreadId String       @unique
-  status         String       @default("RESEARCHING") // RESEARCHING, DRAFTING, REVIEWING, PUBLISHED
+  mastraThreadId String     @unique
+  status         String     @default("RESEARCHING") // RESEARCHING | DRAFTING | REVIEWING | PUBLISHED
   finalDraft     String?
-  userId         String?
-  user           User?        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  slug           String?      @unique
-  displayName    String?
-  tagline        String?
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  title          String?
+  slug           String?
+  publishedAt    DateTime?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
   topics         Topic[]
-  subscribers    Subscriber[]
+
+  @@unique([newsletterId, slug])
 }
 
 model Subscriber {
@@ -54,11 +68,11 @@ model Subscriber {
 }
 
 model Topic {
-  id           String     @id @default(uuid())
-  title        String
-  summary      String
-  sourceUrl    String
-  isApproved   Boolean    @default(true)
-  newsletterId String
-  newsletter   Newsletter @relation(fields: [newsletterId], references: [id], onDelete: Cascade)
+  id         String  @id @default(uuid())
+  title      String
+  summary    String
+  sourceUrl  String
+  isApproved Boolean @default(true)
+  issueId    String
+  issue      Issue   @relation(fields: [issueId], references: [id], onDelete: Cascade)
 }
