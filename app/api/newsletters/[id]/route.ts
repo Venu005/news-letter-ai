@@ -2,11 +2,11 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireInternalUserId } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
+import type { IssueStatus } from "@/lib/types/issue";
 
 const patchNewsletterSchema = z.object({
-  finalDraft: z.string().optional(),
-  displayName: z.string().max(120).optional(),
-  tagline: z.string().max(280).optional(),
+  name: z.string().trim().min(1).max(120).optional(),
+  tagline: z.string().trim().max(280).optional(),
 });
 
 export async function GET(
@@ -20,32 +20,43 @@ export async function GET(
   const newsletter = await prisma.newsletter.findFirst({
     where: { id, userId: authResult.userId },
     include: {
-      topics: { orderBy: { title: "asc" } },
+      issues: {
+        orderBy: [{ createdAt: "desc" }],
+        select: {
+          id: true,
+          newsletterId: true,
+          niche: true,
+          title: true,
+          status: true,
+          slug: true,
+          publishedAt: true,
+          updatedAt: true,
+        },
+      },
     },
   });
   if (!newsletter) {
     return NextResponse.json({ error: "Newsletter not found." }, { status: 404 });
   }
+
   return NextResponse.json({
     newsletter: {
       id: newsletter.id,
-      niche: newsletter.niche,
-      mastraThreadId: newsletter.mastraThreadId,
-      status: newsletter.status,
-      finalDraft: newsletter.finalDraft,
+      name: newsletter.name,
       slug: newsletter.slug,
-      displayName: newsletter.displayName,
       tagline: newsletter.tagline,
       createdAt: newsletter.createdAt.toISOString(),
       updatedAt: newsletter.updatedAt.toISOString(),
     },
-    topics: newsletter.topics.map((t) => ({
-      id: t.id,
-      title: t.title,
-      summary: t.summary,
-      sourceUrl: t.sourceUrl,
-      isApproved: t.isApproved,
-      newsletterId: t.newsletterId,
+    issues: newsletter.issues.map((i) => ({
+      id: i.id,
+      newsletterId: i.newsletterId,
+      niche: i.niche,
+      title: i.title,
+      status: i.status as IssueStatus,
+      slug: i.slug,
+      publishedAt: i.publishedAt ? i.publishedAt.toISOString() : null,
+      updatedAt: i.updatedAt.toISOString(),
     })),
   });
 }
@@ -68,11 +79,7 @@ export async function PATCH(
   }
 
   const body = parsed.data;
-  if (
-    body.finalDraft === undefined &&
-    body.displayName === undefined &&
-    body.tagline === undefined
-  ) {
+  if (body.name === undefined && body.tagline === undefined) {
     return NextResponse.json({ error: "At least one field required." }, { status: 400 });
   }
 
@@ -87,21 +94,24 @@ export async function PATCH(
   const newsletter = await prisma.newsletter.update({
     where: { id },
     data: {
-      ...(body.finalDraft !== undefined && { finalDraft: body.finalDraft }),
-      ...(body.displayName !== undefined && { displayName: body.displayName }),
+      ...(body.name !== undefined && { name: body.name }),
       ...(body.tagline !== undefined && { tagline: body.tagline }),
+    },
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      tagline: true,
+      createdAt: true,
+      updatedAt: true,
     },
   });
 
   return NextResponse.json({
     newsletter: {
       id: newsletter.id,
-      niche: newsletter.niche,
-      mastraThreadId: newsletter.mastraThreadId,
-      status: newsletter.status,
-      finalDraft: newsletter.finalDraft,
+      name: newsletter.name,
       slug: newsletter.slug,
-      displayName: newsletter.displayName,
       tagline: newsletter.tagline,
       createdAt: newsletter.createdAt.toISOString(),
       updatedAt: newsletter.updatedAt.toISOString(),
