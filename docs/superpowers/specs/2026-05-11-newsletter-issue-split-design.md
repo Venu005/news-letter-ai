@@ -123,7 +123,7 @@ One new migration: `prisma/migrations/<timestamp>_split_newsletter_issue/migrati
 ### 5.1 Steps (in order)
 
 1. **Create `Issue`** with the columns from §4.1.
-2. **Backfill issues from newsletters.** For each existing `Newsletter` row insert one `Issue` carrying `niche`, `mastraThreadId`, `status`, `finalDraft`, `createdAt`, `updatedAt`. Resolve `title` as: first ATX H1 from `finalDraft` if present (handled with SQL `SUBSTR`/`INSTR` over the leading line; otherwise the migration may leave `title` `NULL` and let the application derive it on next save) else `niche`. Resolve `slug` and `publishedAt` only when the source row's `status='PUBLISHED'`; otherwise leave both `NULL`.
+2. **Backfill issues from newsletters.** For each existing `Newsletter` row insert one `Issue` carrying `niche`, `mastraThreadId`, `status`, `finalDraft`, `createdAt`, `updatedAt`. Set `Issue.title = niche` for every backfilled row — this avoids ATX H1 extraction in SQL and keeps the migration deterministic. (The runtime rule from §4.2 still applies going forward: the next `PATCH /api/issues/[id]` that saves a `finalDraft` will re-derive `title` from the first H1, or keep `niche` if there is none.) For rows where source `status='PUBLISHED'`, also set `slug = slugify(niche)` with per-newsletter collision suffix, and `publishedAt = updatedAt`. For non-published rows, leave `slug` and `publishedAt` `NULL`.
 3. **Re-parent topics.** Add `Topic.issueId`. Run `UPDATE Topic SET issueId = (SELECT id FROM Issue WHERE Issue.newsletterId = Topic.newsletterId)`. Drop `Topic.newsletterId` (Prisma's SQLite-aware migration handles the table rebuild).
 4. **Slim down `Newsletter`.** Add `name`, populate with `COALESCE(displayName, niche)`. Drop `displayName`, `niche`, `mastraThreadId`, `status`, `finalDraft`. Mark `name` `NOT NULL`. Keep `slug`, `tagline`, `userId`, timestamps, and the existing `Subscriber` unique constraint.
 
@@ -182,7 +182,7 @@ All issue-scoped routes load the issue, join to `Newsletter.userId`, and reject 
 
 - `topics-editor.tsx` and `draft-editor.tsx` keep their internals; their fetch calls are repointed from `/api/newsletters/[id]/topics` and `/api/generate-draft` to `/api/issues/[id]/topics` and `/api/issues/[id]/draft`. The `newsletterId` prop becomes `issueId`.
 - `app/home-form.tsx` is repurposed into two thinner forms: `CreateNewsletterForm` (asks for name, lives on `/dashboard`) and `CreateArticleForm` (asks for niche, lives on `/dashboard/newsletter/[id]`).
-- `lib/query/prefetch-newsletter-detail.ts` is replaced by `lib/query/prefetch-issue-detail.ts` (same shape, keyed by issue id).
+- `lib/query/prefetch-newsletter-detail.ts` is **adapted** to the new `Newsletter` shape (no `finalDraft`/`status`/`niche`/`mastraThreadId`; adds the `issues` list) and continues to back the new newsletter detail page. A new `lib/query/prefetch-issue-detail.ts` is added with the same pattern, keyed by issue id, and powers the topics/draft pages.
 
 ### 7.2 Status badges
 
@@ -245,8 +245,8 @@ Approximate list; the implementation plan will confirm.
 ## 11. Open Items for Implementation
 
 - Confirm Markdown renderer choice (`react-markdown` with allowlist is the default unless a lighter option emerges).
-- Decide whether the migration computes `Issue.title` for legacy rows in SQL or leaves it `NULL` and relies on the next `PATCH /api/issues/[id]` to derive it. The implementation plan will pick one based on how messy the SQL extraction is for ATX H1 in SQLite.
 - Confirm dev.db handling: snapshot before applying the migration; document the `prisma migrate resolve --rolled-back` step for the two empty placeholder migrations if they appear in `_prisma_migrations`.
+- Decide whether the per-newsletter issue slug generator is a new helper in `lib/slug.ts` (e.g. `allocateIssueSlug(newsletterId, title, isUnique)`) or inlined in the publish handler. Either is fine; consistency with `allocateNewsletterSlug` favors the helper.
 
 ## 12. Follow-ups (post this spec)
 
