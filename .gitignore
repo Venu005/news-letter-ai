@@ -46,3 +46,5 @@ next-env.d.ts
 /lib/generated/prisma
 
 *.db
+# Added by code-review-graph
+.code-review-graph/
