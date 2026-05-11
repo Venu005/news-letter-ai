@@ -10,6 +10,7 @@
     "lint": "eslint",
     "test": "vitest run",
     "db:backfill-phase1": "tsx scripts/backfill-phase1-ownership.ts",
+    "db:verify-issue-migration": "tsx scripts/verify-issue-migration.ts",
     "db:apply-turso": "node --env-file=.env scripts/apply-prisma-migrations-to-turso.mjs",
     "db:turso-mark-applied": "node --env-file=.env scripts/apply-prisma-migrations-to-turso.mjs mark"
   },
