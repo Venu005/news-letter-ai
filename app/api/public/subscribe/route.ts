@@ -33,7 +33,7 @@ export async function POST(req: Request) {
 
   const newsletter = await prisma.newsletter.findUnique({
     where: { slug },
-    select: { id: true, displayName: true, niche: true },
+    select: { id: true, name: true },
   });
 
   if (!newsletter) {
@@ -94,7 +94,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Subscribe is not configured on this server." }, { status: 503 });
   }
 
-  const title = newsletter.displayName ?? newsletter.niche;
+  const title = newsletter.name;
   const sent = await sendSubscribeConfirmationEmail({
     to: parsed.data.email.trim(),
     newsletterTitle: title,
