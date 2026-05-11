@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireInternalUserId } from "@/lib/current-user";
+import { issueOwnedBy } from "@/lib/issue-owner";
 import { prisma } from "@/lib/prisma";
+import { allocateIssueSlug } from "@/lib/slug";
 
 const RESEND_SEND_URL = "https://api.resend.com/emails";
 
 const publishBodySchema = z.object({
-  newsletterId: z.string().uuid(),
   to: z.string().email().optional(),
 });
 
@@ -46,15 +47,15 @@ async function sendViaResend(params: {
     console.error("Resend publish failed:", response.status);
     return { ok: false };
   }
-
-  const payload = (await response.json().catch(() => null)) as {
-    id?: string;
-  } | null;
+  const payload = (await response.json().catch(() => null)) as { id?: string } | null;
   const messageId = typeof payload?.id === "string" ? payload.id : undefined;
   return { ok: true, messageId };
 }
 
-export async function POST(req: Request) {
+export async function POST(
+  req: Request,
+  ctx: { params: Promise<{ id: string }> },
+) {
   const authResult = await requireInternalUserId();
   if (!authResult.ok) return authResult.response;
 
@@ -67,19 +68,20 @@ export async function POST(req: Request) {
     );
   }
 
+  const { id } = await ctx.params;
+  const owner = await issueOwnedBy(id, authResult.userId);
+  if (!owner) {
+    return NextResponse.json({ error: "Issue not found." }, { status: 404 });
+  }
+
   const json = await req.json().catch(() => null);
-  const parsed = publishBodySchema.safeParse(json);
+  const parsed = publishBodySchema.safeParse(json ?? {});
   if (!parsed.success) {
-    return NextResponse.json(
-      { error: "Invalid request body." },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
   }
 
   let recipient = parsed.data.to?.trim();
-  if (!recipient) {
-    recipient = process.env.NEWSLETTER_PUBLISH_TO?.trim();
-  }
+  if (!recipient) recipient = process.env.NEWSLETTER_PUBLISH_TO?.trim();
   if (!recipient) {
     return NextResponse.json(
       {
@@ -90,40 +92,33 @@ export async function POST(req: Request) {
     );
   }
 
-  const newsletter = await prisma.newsletter.findFirst({
-    where: { id: parsed.data.newsletterId, userId: authResult.userId },
-    select: { id: true, niche: true, status: true, finalDraft: true },
+  const issue = await prisma.issue.findUnique({
+    where: { id },
+    include: { newsletter: { select: { name: true } } },
   });
-
-  if (!newsletter) {
-    return NextResponse.json(
-      { error: "Newsletter not found." },
-      { status: 404 },
-    );
+  if (!issue) {
+    return NextResponse.json({ error: "Issue not found." }, { status: 404 });
   }
-
-  if (newsletter.status === "PUBLISHED") {
+  if (issue.status === "PUBLISHED") {
     return NextResponse.json(
-      { error: "This newsletter is already published." },
+      { error: "This issue is already published." },
       { status: 409 },
     );
   }
-
-  if (newsletter.status === "RESEARCHING") {
+  if (issue.status === "RESEARCHING") {
     return NextResponse.json(
       { error: "Finish researching and drafting before publishing." },
       { status: 400 },
     );
   }
-
-  if (newsletter.status !== "DRAFTING" && newsletter.status !== "REVIEWING") {
+  if (issue.status !== "DRAFTING" && issue.status !== "REVIEWING") {
     return NextResponse.json(
-      { error: "Newsletter cannot be published in its current state." },
+      { error: "Issue cannot be published in its current state." },
       { status: 400 },
     );
   }
 
-  const bodyText = newsletter.finalDraft?.trim() ?? "";
+  const bodyText = issue.finalDraft?.trim() ?? "";
   if (!bodyText) {
     return NextResponse.json(
       { error: "Draft is empty. Save or generate a draft before publishing." },
@@ -131,7 +126,17 @@ export async function POST(req: Request) {
     );
   }
 
-  const subject = truncateSubject(`Newsletter: ${newsletter.niche}`);
+  const titleSource = issue.title?.trim() || issue.niche;
+
+  const slug = await allocateIssueSlug(titleSource, async (candidate) => {
+    const row = await prisma.issue.findFirst({
+      where: { newsletterId: issue.newsletterId, slug: candidate },
+      select: { id: true },
+    });
+    return !!row;
+  });
+
+  const subject = truncateSubject(`${issue.newsletter.name}: ${titleSource}`);
   const sent = await sendViaResend({
     apiKey,
     from,
@@ -139,7 +144,6 @@ export async function POST(req: Request) {
     subject,
     text: bodyText,
   });
-
   if (!sent.ok) {
     return NextResponse.json(
       { error: "Could not send email. Try again later." },
@@ -147,13 +151,19 @@ export async function POST(req: Request) {
     );
   }
 
-  await prisma.newsletter.update({
-    where: { id: newsletter.id },
-    data: { status: "PUBLISHED" },
+  await prisma.issue.update({
+    where: { id },
+    data: {
+      status: "PUBLISHED",
+      publishedAt: new Date(),
+      slug,
+      title: titleSource,
+    },
   });
 
   return NextResponse.json({
     ok: true,
+    slug,
     ...(sent.messageId !== undefined ? { messageId: sent.messageId } : {}),
   });
 }
