@@ -4,9 +4,9 @@ import { Suspense } from "react";
 import { DraftEditor } from "./draft-editor";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
-import { getNewsletterDehydratedState } from "@/lib/query/prefetch-newsletter-detail";
+import { getIssueDehydratedState } from "@/lib/query/prefetch-issue-detail";
 
-function DraftEditorFallback() {
+function Fallback() {
   return (
     <div className="flex items-center gap-intel-stack-sm text-sm text-[#6F6F6F]">
       <Spinner />
@@ -18,10 +18,10 @@ function DraftEditorFallback() {
 export default async function DraftPage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ id: string; issueId: string }>;
 }) {
-  const { id } = await params;
-  const dehydratedState = await getNewsletterDehydratedState(id);
+  const { id, issueId } = await params;
+  const dehydratedState = await getIssueDehydratedState(issueId);
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-intel-stack-lg px-8 py-10">
@@ -31,16 +31,18 @@ export default async function DraftPage({
         </h1>
         <div className="flex flex-wrap gap-intel-stack-sm">
           <Button variant="outline" size="sm" asChild>
-            <Link href={`/dashboard/newsletter/${id}/topics`}>Back to topics</Link>
+            <Link href={`/dashboard/newsletter/${id}/issue/${issueId}/topics`}>
+              Back to topics
+            </Link>
           </Button>
           <Button variant="ghost" size="sm" asChild>
-            <Link href="/dashboard">Dashboard</Link>
+            <Link href={`/dashboard/newsletter/${id}`}>Newsletter</Link>
           </Button>
         </div>
       </div>
       <HydrationBoundary state={dehydratedState}>
-        <Suspense fallback={<DraftEditorFallback />}>
-          <DraftEditor newsletterId={id} />
+        <Suspense fallback={<Fallback />}>
+          <DraftEditor issueId={issueId} />
         </Suspense>
       </HydrationBoundary>
     </div>

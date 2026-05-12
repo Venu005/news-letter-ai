@@ -11,39 +11,42 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  type NewsletterDetailPayload,
-  fetchNewsletterDetail,
-} from "@/lib/query/fetch-newsletter-detail";
-import { newsletterDetailQueryKey } from "@/lib/query/newsletter-keys";
+  generateDraft,
+  publishIssue,
+  saveDraft,
+} from "@/lib/mutation/issue-mutations";
+import {
+  type IssueDetailPayload,
+  fetchIssueDetail,
+} from "@/lib/query/fetch-issue-detail";
+import { issueDetailQueryKey } from "@/lib/query/issue-keys";
 
-function draftStateKey(d: NewsletterDetailPayload) {
-  return `${d.newsletter.updatedAt}|${d.newsletter.status}|${(d.newsletter.finalDraft ?? "").length}`;
+function draftStateKey(d: IssueDetailPayload) {
+  return `${d.issue.updatedAt}|${d.issue.status}|${(d.issue.finalDraft ?? "").length}`;
 }
 
-export function DraftEditor({ newsletterId }: { newsletterId: string }) {
+export function DraftEditor({ issueId }: { issueId: string }) {
   const { data } = useSuspenseQuery({
-    queryKey: newsletterDetailQueryKey(newsletterId),
-    queryFn: ({ signal }) => fetchNewsletterDetail(newsletterId, { signal }),
+    queryKey: issueDetailQueryKey(issueId),
+    queryFn: ({ signal }) => fetchIssueDetail(issueId, { signal }),
   });
-
   const dk = useMemo(() => draftStateKey(data), [data]);
-
   return (
     <DraftEditorFields
       key={dk}
-      newsletterId={newsletterId}
-      initialDraft={data.newsletter.finalDraft ?? ""}
-      status={data.newsletter.status}
+      issueId={issueId}
+      initialDraft={data.issue.finalDraft ?? ""}
+      status={data.issue.status}
     />
   );
 }
 
 function DraftEditorFields({
-  newsletterId,
+  issueId,
   initialDraft,
   status,
 }: {
-  newsletterId: string;
+  issueId: string;
   initialDraft: string;
   status: string;
 }) {
@@ -51,94 +54,34 @@ function DraftEditorFields({
   const [draftText, setDraftText] = useState(initialDraft);
   const [publishOk, setPublishOk] = useState<string | null>(null);
 
+  const invalidate = () =>
+    queryClient.invalidateQueries({ queryKey: issueDetailQueryKey(issueId) });
+
   const generateMutation = useMutation({
-    mutationFn: async () => {
-      const res = await fetch("/api/generate-draft", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ newsletterId }),
-      });
-      const body = (await res.json().catch(() => ({}))) as {
-        error?: string;
-        draft?: string;
-      };
-      if (!res.ok) {
-        throw new Error(
-          typeof body.error === "string"
-            ? body.error
-            : "Failed to generate draft.",
-        );
-      }
-      return typeof body.draft === "string" ? body.draft : "";
-    },
-    onSuccess: (draft) => {
-      setDraftText(draft);
+    mutationFn: () => generateDraft({ issueId }),
+    onSuccess: (result) => {
+      setDraftText(result.draft);
       setPublishOk(null);
-      void queryClient.invalidateQueries({
-        queryKey: newsletterDetailQueryKey(newsletterId),
-      });
+      void invalidate();
     },
   });
 
   const saveMutation = useMutation({
-    mutationFn: async (text: string) => {
-      const res = await fetch(`/api/newsletters/${newsletterId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ finalDraft: text }),
-      });
-      const body = (await res.json().catch(() => ({}))) as { error?: string };
-      if (!res.ok) {
-        throw new Error(
-          typeof body.error === "string" ? body.error : "Failed to save draft.",
-        );
-      }
-    },
+    mutationFn: (text: string) => saveDraft({ issueId, finalDraft: text }),
     onSuccess: () => {
       setPublishOk(null);
-      void queryClient.invalidateQueries({
-        queryKey: newsletterDetailQueryKey(newsletterId),
-      });
+      void invalidate();
     },
   });
 
   const publishMutation = useMutation({
     mutationFn: async (text: string) => {
-      const saveRes = await fetch(`/api/newsletters/${newsletterId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ finalDraft: text }),
-      });
-      const saveData = (await saveRes.json().catch(() => ({}))) as {
-        error?: string;
-      };
-      if (!saveRes.ok) {
-        throw new Error(
-          typeof saveData.error === "string"
-            ? saveData.error
-            : "Could not save draft before publishing.",
-        );
-      }
-
-      const pubRes = await fetch("/api/publish", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ newsletterId }),
-      });
-      const pubData = (await pubRes.json().catch(() => ({}))) as {
-        error?: string;
-      };
-      if (!pubRes.ok) {
-        throw new Error(
-          typeof pubData.error === "string" ? pubData.error : "Publish failed.",
-        );
-      }
+      await saveDraft({ issueId, finalDraft: text });
+      return publishIssue({ issueId });
     },
     onSuccess: () => {
       setPublishOk("Published successfully.");
-      void queryClient.invalidateQueries({
-        queryKey: newsletterDetailQueryKey(newsletterId),
-      });
+      void invalidate();
     },
   });
 
@@ -162,23 +105,18 @@ function DraftEditorFields({
           <Badge variant="secondary">{status}</Badge>
         </div>
       ) : null}
-
       {mutationError ? (
         <Alert variant="destructive">
           <AlertDescription>
-            {mutationError instanceof Error
-              ? mutationError.message
-              : "Request failed."}
+            {mutationError instanceof Error ? mutationError.message : "Request failed."}
           </AlertDescription>
         </Alert>
       ) : null}
-
       {publishOk ? (
         <Alert>
           <AlertDescription>{publishOk}</AlertDescription>
         </Alert>
       ) : null}
-
       <div className="flex flex-wrap gap-intel-stack-sm">
         <Button
           type="button"
@@ -209,7 +147,6 @@ function DraftEditorFields({
           {publishMutation.isPending ? "Publishing…" : "Publish"}
         </Button>
       </div>
-
       <div className="flex flex-col gap-intel-stack-sm">
         <span className="text-foreground text-sm font-medium">Markdown</span>
         <Textarea
