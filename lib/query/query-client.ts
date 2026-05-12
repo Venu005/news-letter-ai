@@ -1,4 +1,5 @@
 import { QueryClient } from "@tanstack/react-query";
+import { IssueNotFoundError } from "./fetch-issue-detail";
 import { NewsletterNotFoundError } from "./fetch-newsletter-detail";
 
 export function makeQueryClient() {
@@ -7,7 +8,10 @@ export function makeQueryClient() {
       queries: {
         staleTime: 30_000,
         retry: (failureCount, error) => {
-          if (error instanceof NewsletterNotFoundError) {
+          if (
+            error instanceof NewsletterNotFoundError ||
+            error instanceof IssueNotFoundError
+          ) {
             return false;
           }
           return failureCount < 2;
