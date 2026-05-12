@@ -8,103 +8,85 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { saveTopics } from "@/lib/mutation/issue-mutations";
 import {
-  type NewsletterDetailPayload,
-  type TopicRow,
-  fetchNewsletterDetail,
-} from "@/lib/query/fetch-newsletter-detail";
-import { newsletterDetailQueryKey } from "@/lib/query/newsletter-keys";
+  type IssueDetailPayload,
+  fetchIssueDetail,
+} from "@/lib/query/fetch-issue-detail";
+import { issueDetailQueryKey } from "@/lib/query/issue-keys";
+import type { Topic } from "@/lib/types/topic";
 
-export type { TopicRow };
-
-function topicsFingerprint(d: NewsletterDetailPayload) {
-  return `${d.newsletter.updatedAt}|${d.topics
+function topicsFingerprint(d: IssueDetailPayload) {
+  return `${d.issue.updatedAt}|${d.topics
     .map((t) => [t.id, t.title, t.summary, t.sourceUrl, t.isApproved].join("\u0001"))
     .join("\u0002")}`;
 }
 
-export function TopicsEditor({ newsletterId }: { newsletterId: string }) {
+export function TopicsEditor({
+  newsletterId,
+  issueId,
+}: {
+  newsletterId: string;
+  issueId: string;
+}) {
   const { data } = useSuspenseQuery({
-    queryKey: newsletterDetailQueryKey(newsletterId),
-    queryFn: ({ signal }) => fetchNewsletterDetail(newsletterId, { signal }),
+    queryKey: issueDetailQueryKey(issueId),
+    queryFn: ({ signal }) => fetchIssueDetail(issueId, { signal }),
   });
-
   const fp = useMemo(() => topicsFingerprint(data), [data]);
-
   return (
     <TopicsEditorForm
       key={fp}
       newsletterId={newsletterId}
+      issueId={issueId}
       initialTopics={data.topics}
-      initialNiche={data.newsletter.niche ?? null}
+      niche={data.issue.niche}
     />
   );
 }
 
 function TopicsEditorForm({
   newsletterId,
+  issueId,
   initialTopics,
-  initialNiche,
+  niche,
 }: {
   newsletterId: string;
-  initialTopics: TopicRow[];
-  initialNiche: string | null;
+  issueId: string;
+  initialTopics: Topic[];
+  niche: string;
 }) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [topics, setTopics] = useState(initialTopics);
-  const niche = initialNiche;
 
   const saveMutation = useMutation({
-    mutationFn: async (payload: TopicRow[]) => {
-      const res = await fetch(`/api/newsletters/${newsletterId}/topics`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          topics: payload.map((t) => ({
-            id: t.id,
-            title: t.title,
-            summary: t.summary,
-            sourceUrl: t.sourceUrl,
-            isApproved: t.isApproved,
-          })),
-        }),
-      });
-      const body = (await res.json().catch(() => ({}))) as {
-        error?: string;
-        topics?: TopicRow[];
-      };
-      if (!res.ok) {
-        throw new Error(
-          typeof body.error === "string" ? body.error : "Failed to save topics.",
-        );
-      }
-      if (!body.topics) {
-        throw new Error("Invalid save response.");
-      }
-      return body.topics;
-    },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({
-        queryKey: newsletterDetailQueryKey(newsletterId),
-      });
-    },
+    mutationFn: (payload: Topic[]) =>
+      saveTopics({
+        issueId,
+        topics: payload.map((t) => ({
+          id: t.id,
+          title: t.title,
+          summary: t.summary,
+          sourceUrl: t.sourceUrl,
+          isApproved: t.isApproved,
+        })),
+      }),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: issueDetailQueryKey(issueId) }),
   });
 
   const hasApproved = topics.some((t) => t.isApproved);
 
-  function updateTopic(id: string, patch: Partial<TopicRow>) {
+  function updateTopic(id: string, patch: Partial<Topic>) {
     setTopics((prev) => prev.map((t) => (t.id === id ? { ...t, ...patch } : t)));
   }
 
   return (
     <div className="flex flex-col gap-intel-stack-lg">
-      {niche ? (
-        <p className="text-sm text-muted-foreground">
-          Niche: <span className="font-medium text-foreground">{niche}</span>
-        </p>
-      ) : null}
-
+      <p className="text-sm text-muted-foreground">
+        Niche: <span className="font-medium text-foreground">{niche}</span>
+      </p>
       {saveMutation.error ? (
         <Alert variant="destructive">
           <AlertDescription>
@@ -114,7 +96,6 @@ function TopicsEditorForm({
           </AlertDescription>
         </Alert>
       ) : null}
-
       <div className="flex flex-col gap-intel-stack-md">
         {topics.map((t) => (
           <Card key={t.id} size="sm">
@@ -154,13 +135,12 @@ function TopicsEditorForm({
                   onChange={(e) => updateTopic(t.id, { isApproved: e.target.checked })}
                   className="size-4 rounded border-input"
                 />
-                Approved for newsletter
+                Approved for article
               </label>
             </CardContent>
           </Card>
         ))}
       </div>
-
       <div className="flex flex-wrap gap-intel-stack-sm">
         <Button
           type="button"
@@ -173,7 +153,11 @@ function TopicsEditorForm({
           type="button"
           variant="outline"
           disabled={!hasApproved}
-          onClick={() => router.push(`/dashboard/newsletter/${newsletterId}/draft`)}
+          onClick={() =>
+            router.push(
+              `/dashboard/newsletter/${newsletterId}/issue/${issueId}/draft`,
+            )
+          }
         >
           Continue to draft
         </Button>

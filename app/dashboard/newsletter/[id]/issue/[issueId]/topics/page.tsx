@@ -4,9 +4,9 @@ import { Suspense } from "react";
 import { TopicsEditor } from "./topics-editor";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
-import { getNewsletterDehydratedState } from "@/lib/query/prefetch-newsletter-detail";
+import { getIssueDehydratedState } from "@/lib/query/prefetch-issue-detail";
 
-function TopicsEditorFallback() {
+function Fallback() {
   return (
     <div className="flex items-center gap-intel-stack-sm text-sm text-[#6F6F6F]">
       <Spinner />
@@ -18,10 +18,10 @@ function TopicsEditorFallback() {
 export default async function TopicsPage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ id: string; issueId: string }>;
 }) {
-  const { id } = await params;
-  const dehydratedState = await getNewsletterDehydratedState(id);
+  const { id, issueId } = await params;
+  const dehydratedState = await getIssueDehydratedState(issueId);
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-intel-stack-lg px-8 py-10">
@@ -29,13 +29,18 @@ export default async function TopicsPage({
         <h1 className="orchestra-heading text-3xl font-normal tracking-tight text-black">
           Topics
         </h1>
-        <Button variant="outline" size="sm" asChild>
-          <Link href="/dashboard">Dashboard</Link>
-        </Button>
+        <div className="flex flex-wrap gap-intel-stack-sm">
+          <Button variant="outline" size="sm" asChild>
+            <Link href={`/dashboard/newsletter/${id}`}>Newsletter</Link>
+          </Button>
+          <Button variant="ghost" size="sm" asChild>
+            <Link href="/dashboard">Dashboard</Link>
+          </Button>
+        </div>
       </div>
       <HydrationBoundary state={dehydratedState}>
-        <Suspense fallback={<TopicsEditorFallback />}>
-          <TopicsEditor newsletterId={id} />
+        <Suspense fallback={<Fallback />}>
+          <TopicsEditor newsletterId={id} issueId={issueId} />
         </Suspense>
       </HydrationBoundary>
     </div>
