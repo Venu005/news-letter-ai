@@ -12,6 +12,15 @@
 
 **After this phase:** `prisma migrate dev` applies cleanly and `dev.db` has the new shape. The existing API routes (`app/api/generate-topics`, `app/api/generate-draft`, `app/api/publish`, `app/api/newsletters/[id]/route.ts`, `app/api/newsletters/[id]/topics/route.ts`) will fail to compile because they reference dropped fields (`niche`, `displayName`, `mastraThreadId`, `status`, `finalDraft` on `Newsletter`, and `newsletterId` on `Topic`). Phase 2 fixes them.
 
+> **Amendments during execution (recorded after the fact).** This plan was followed task-by-task with a few small deviations that the steps below don't yet reflect verbatim. Future readers should treat the git history as the source of truth and the steps below as the original intent.
+>
+> - **Verification script extension.** The plan calls for `scripts/verify-issue-migration.mjs` run via `node`. As shipped, the script lives at `scripts/verify-issue-migration.ts` and is run via `tsx` (added as the `db:verify-issue-migration` npm script). Two reasons: this project's Prisma generator only emits `.ts` (no `.js`) so the generated client can't be imported from `.mjs`, and `tsx` is already the project's convention for scripts.
+> - **Prisma adapter required.** The verification script (and any direct `new PrismaClient()` site) must be constructed with an explicit adapter argument: `new PrismaClient({ adapter: adapterFromEnv() })`. Bare instantiation fails with `PrismaClientInitializationError` because the project's generator is configured for driver adapters.
+> - **`--skip-generate` flag removed.** `npx prisma migrate dev --skip-generate` no longer accepts that flag on Prisma 7.8+. Drop it; the implicit generator run is harmless.
+> - **Placeholder migration recovery.** Task 1 assumes both empty placeholder migration directories were in a `failed` state. In practice, `20260509120000_add_issue_model` was already recorded as `applied` (zero-SQL no-op), so `prisma migrate resolve --rolled-back` rejected it. The recovery path was a direct `sqlite3 dev.db "DELETE FROM _prisma_migrations WHERE migration_name = '20260509120000_add_issue_model';"`. Safe because no SQL had executed.
+> - **Stale `Issue` table from earlier work.** A prior abandoned attempt had left an `Issue` table in `dev.db` (no rows). Prisma's migration-drift guard blocked progress and Prisma 7's AI-agent guard rejects `migrate reset`. The recovery was `sqlite3 dev.db "DROP TABLE IF EXISTS Issue;"` after confirming zero rows.
+> - **`.gitignore` widened.** The snapshot file `dev.db.before-split-phase-1` was accidentally tracked because `.gitignore` only ignored `*.db`, not `dev.db.*`. A follow-up commit ran `git rm --cached` and widened the ignore rule to `dev.db.*`. Future snapshots are safe.
+
 ---
 
 ## File structure (this phase)
