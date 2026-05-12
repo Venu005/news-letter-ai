@@ -17,14 +17,13 @@ export default async function PublicNewsletterPage(props: {
     where: { slug },
     select: {
       slug: true,
-      displayName: true,
+      name: true,
       tagline: true,
-      niche: true,
     },
   });
   if (!newsletter?.slug) notFound();
 
-  const title = newsletter.displayName ?? newsletter.niche;
+  const title = newsletter.name;
 
   return (
     <main className="mx-auto flex max-w-xl flex-col gap-intel-stack-lg px-intel-margin py-intel-stack-lg">
