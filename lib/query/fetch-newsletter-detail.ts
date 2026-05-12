@@ -1,27 +1,7 @@
-export type TopicRow = {
-  id: string;
-  title: string;
-  summary: string;
-  sourceUrl: string;
-  isApproved: boolean;
-  newsletterId: string;
-};
+import type { IssueListItem } from "@/lib/types/issue";
+import type { Newsletter, NewsletterDetailPayload } from "@/lib/types/newsletter";
 
-export type NewsletterDetailPayload = {
-  newsletter: {
-    id: string;
-    niche: string;
-    mastraThreadId: string | null;
-    status: string;
-    finalDraft: string | null;
-    slug: string | null;
-    displayName: string | null;
-    tagline: string | null;
-    createdAt: string;
-    updatedAt: string;
-  };
-  topics: TopicRow[];
-};
+export type { Newsletter, NewsletterDetailPayload, IssueListItem };
 
 export class NewsletterNotFoundError extends Error {
   readonly statusCode = 404;
@@ -50,9 +30,7 @@ export async function fetchNewsletterDetail(
       : path;
 
   const headers: Record<string, string> = {};
-  if (init?.cookie) {
-    headers.Cookie = init.cookie;
-  }
+  if (init?.cookie) headers.Cookie = init.cookie;
 
   const res = await fetch(url, {
     signal: init?.signal,
@@ -62,8 +40,8 @@ export async function fetchNewsletterDetail(
 
   const data = (await res.json().catch(() => ({}))) as {
     error?: unknown;
-    newsletter?: NewsletterDetailPayload["newsletter"];
-    topics?: TopicRow[];
+    newsletter?: Newsletter;
+    issues?: IssueListItem[];
   };
 
   if (res.status === 404) {
@@ -71,17 +49,10 @@ export async function fetchNewsletterDetail(
       typeof data.error === "string" ? data.error : "Newsletter not found.";
     throw new NewsletterNotFoundError(msg);
   }
-
-  if (!res.ok) {
-    throw new Error("Could not load newsletter.");
-  }
-
-  if (!data.newsletter || !Array.isArray(data.topics)) {
+  if (!res.ok) throw new Error("Could not load newsletter.");
+  if (!data.newsletter || !Array.isArray(data.issues)) {
     throw new Error("Invalid newsletter response.");
   }
 
-  return {
-    newsletter: data.newsletter,
-    topics: data.topics,
-  };
+  return { newsletter: data.newsletter, issues: data.issues };
 }
