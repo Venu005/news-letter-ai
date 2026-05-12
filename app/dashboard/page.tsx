@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { HomeForm } from "@/app/home-form";
+import { CreateNewsletterForm } from "@/components/dashboard/create-newsletter-form";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,7 +21,14 @@ export default async function DashboardPage() {
   const newsletters = await prisma.newsletter.findMany({
     where: { userId: internalId },
     orderBy: { updatedAt: "desc" },
-    select: { id: true, niche: true, slug: true, status: true, updatedAt: true },
+    include: {
+      issues: {
+        orderBy: { createdAt: "desc" },
+        select: { id: true, status: true, publishedAt: true, createdAt: true },
+        take: 1,
+      },
+      _count: { select: { issues: true } },
+    },
   });
 
   return (
@@ -40,33 +47,43 @@ export default async function DashboardPage() {
           </Card>
         ) : (
           <div className="flex flex-col gap-intel-stack-md">
-            {newsletters.map((n) => (
-              <Card key={n.id} size="sm">
-                <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-intel-stack-md space-y-0">
-                  <div className="min-w-0 space-y-1">
-                    <CardTitle className="text-base font-medium text-black">
-                      {n.niche}
-                    </CardTitle>
-                    <CardDescription className="text-[#6F6F6F]">
-                      {n.slug ? `Public: /p/${n.slug}` : "Slug missing — run backfill"}
-                    </CardDescription>
-                  </div>
-                  <Badge variant="secondary">{n.status}</Badge>
-                </CardHeader>
-                <CardContent className="flex flex-wrap gap-intel-stack-sm pt-0">
-                  <Button variant="outline" size="sm" asChild>
-                    <Link href={`/dashboard/newsletter/${n.id}/topics`}>Edit</Link>
-                  </Button>
-                  {n.slug ? (
+            {newsletters.map((n) => {
+              const latest = n.issues[0];
+              const summary =
+                n._count.issues === 0
+                  ? "0 issues"
+                  : latest?.status === "PUBLISHED" && latest.publishedAt
+                    ? `${n._count.issues} issue${n._count.issues === 1 ? "" : "s"} · latest published ${latest.publishedAt.toLocaleDateString()}`
+                    : `${n._count.issues} issue${n._count.issues === 1 ? "" : "s"} · latest ${latest?.status?.toLowerCase() ?? "unknown"}`;
+
+              return (
+                <Card key={n.id} size="sm">
+                  <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-intel-stack-md space-y-0">
+                    <div className="min-w-0 space-y-1">
+                      <CardTitle className="text-base font-medium text-black">
+                        {n.name}
+                      </CardTitle>
+                      <CardDescription className="text-[#6F6F6F]">
+                        {n.slug ? `Public: /p/${n.slug}` : "Slug missing"}
+                      </CardDescription>
+                    </div>
+                    <Badge variant="secondary">{summary}</Badge>
+                  </CardHeader>
+                  <CardContent className="flex flex-wrap gap-intel-stack-sm pt-0">
                     <Button variant="outline" size="sm" asChild>
-                      <Link href={`/p/${n.slug}`} target="_blank" rel="noreferrer">
-                        Public page
-                      </Link>
+                      <Link href={`/dashboard/newsletter/${n.id}`}>Open</Link>
                     </Button>
-                  ) : null}
-                </CardContent>
-              </Card>
-            ))}
+                    {n.slug ? (
+                      <Button variant="outline" size="sm" asChild>
+                        <Link href={`/p/${n.slug}`} target="_blank" rel="noreferrer">
+                          Public page
+                        </Link>
+                      </Button>
+                    ) : null}
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         )}
       </section>
@@ -77,7 +94,7 @@ export default async function DashboardPage() {
         <h2 className="orchestra-heading text-2xl font-normal tracking-tight text-black">
           Create newsletter
         </h2>
-        <HomeForm topicsPathPrefix="/dashboard/newsletter" />
+        <CreateNewsletterForm />
       </section>
     </main>
   );
