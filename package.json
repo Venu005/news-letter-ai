@@ -25,6 +25,7 @@
     "@mastra/loggers": "^1.1.1",
     "@mastra/memory": "^1.17.3",
     "@mastra/observability": "^1.10.2",
+    "@mozilla/readability": "^0.6.0",
     "@prisma/adapter-better-sqlite3": "^7.8.0",
     "@prisma/adapter-libsql": "^7.8.0",
     "@prisma/client": "^7.8.0",
@@ -45,6 +46,7 @@
     "date-fns": "^4.1.0",
     "embla-carousel-react": "^8.6.0",
     "input-otp": "^1.4.2",
+    "jsdom": "^29.1.1",
     "lucide-react": "^1.14.0",
     "mastra": "^1.7.1",
     "media-chrome": "^4.19.0",
@@ -73,6 +75,7 @@
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/better-sqlite3": "^7.6.13",
+    "@types/jsdom": "^28.0.3",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
