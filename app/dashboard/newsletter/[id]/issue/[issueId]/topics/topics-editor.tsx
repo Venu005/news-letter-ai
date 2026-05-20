@@ -25,7 +25,7 @@ import { cn } from "@/lib/utils";
 
 function topicsFingerprint(d: IssueDetailPayload) {
   return `${d.issue.updatedAt}|${d.topics
-    .map((t) => [t.id, t.title, t.summary, t.sourceUrl, t.isApproved].join("\u0001"))
+    .map((t) => [t.id, t.title, t.brief, t.sourceUrl, t.isApproved].join("\u0001"))
     .join("\u0002")}`;
 }
 
@@ -74,7 +74,6 @@ function TopicsEditorForm({
         topics: payload.map((t) => ({
           id: t.id,
           title: t.title,
-          summary: t.summary,
           sourceUrl: t.sourceUrl,
           isApproved: t.isApproved,
         })),
@@ -182,13 +181,13 @@ function TopicsEditorForm({
                   htmlFor={`topic-summary-${t.id}`}
                   className="text-xs font-medium uppercase tracking-wide text-muted-foreground"
                 >
-                  Summary
+                  Brief
                 </label>
                 <Textarea
                   id={`topic-summary-${t.id}`}
                   rows={3}
-                  value={t.summary}
-                  onChange={(e) => updateTopic(t.id, { summary: e.target.value })}
+                  value={t.brief}
+                  onChange={(e) => updateTopic(t.id, { brief: e.target.value })}
                 />
               </div>
               <div className="flex flex-col gap-1.5">

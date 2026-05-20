@@ -44,10 +44,24 @@ export async function POST(
     });
 
     const outline = issue.topics
-      .map(
-        (topic, index) =>
-          `${index + 1}. ${topic.title}\n   Summary: ${topic.summary}\n   Source: ${topic.sourceUrl}`,
-      )
+      .map((topic, index) => {
+        let keyFactsList = "";
+        try {
+          const facts = JSON.parse(topic.keyFacts) as string[];
+          keyFactsList = facts.map((f) => `     - ${f}`).join("\n");
+        } catch {
+          keyFactsList = `     - ${topic.keyFacts}`;
+        }
+        const fullTextExcerpt = topic.fullText.slice(0, 500);
+        return [
+          `${index + 1}. ${topic.title}`,
+          `   Brief: ${topic.brief}`,
+          `   Key Facts:`,
+          keyFactsList,
+          `   Full Article (excerpt): ${fullTextExcerpt}`,
+          `   Source: ${topic.sourceUrl}`,
+        ].join("\n");
+      })
       .join("\n");
 
     const writer = mastra.getAgent("writerAgent");

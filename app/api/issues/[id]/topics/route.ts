@@ -8,7 +8,6 @@ import type { Topic } from "@/lib/types/topic";
 const topicRowSchema = z.object({
   id: z.string().uuid(),
   title: z.string().optional(),
-  summary: z.string().optional(),
   sourceUrl: z.string().url().optional(),
   isApproved: z.boolean().optional(),
 });
@@ -20,15 +19,25 @@ const patchTopicsSchema = z.object({
 function mapTopic(row: {
   id: string;
   title: string;
-  summary: string;
   sourceUrl: string;
+  brief: string;
+  keyFacts: string;
+  fullText: string;
   isApproved: boolean;
   issueId: string;
 }): Topic {
+  let parsedKeyFacts: string[];
+  try {
+    parsedKeyFacts = JSON.parse(row.keyFacts);
+  } catch {
+    parsedKeyFacts = [row.keyFacts];
+  }
   return {
     id: row.id,
     title: row.title,
-    summary: row.summary,
+    brief: row.brief,
+    keyFacts: parsedKeyFacts,
+    fullText: row.fullText,
     sourceUrl: row.sourceUrl,
     isApproved: row.isApproved,
     issueId: row.issueId,
@@ -97,7 +106,6 @@ export async function PATCH(
         where: { id: row.id },
         data: {
           ...(row.title !== undefined && { title: row.title }),
-          ...(row.summary !== undefined && { summary: row.summary }),
           ...(row.sourceUrl !== undefined && { sourceUrl: row.sourceUrl }),
           ...(row.isApproved !== undefined && { isApproved: row.isApproved }),
         },

@@ -58,8 +58,10 @@ export async function POST(
   await prisma.topic.createMany({
     data: topicsPayload.map((topic) => ({
       title: topic.title,
-      summary: topic.summary,
       sourceUrl: topic.sourceUrl,
+      brief: topic.brief,
+      keyFacts: JSON.stringify(topic.keyFacts),
+      fullText: topic.fullText,
       issueId: issue.id,
       isApproved: true,
     })),

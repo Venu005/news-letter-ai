@@ -40,15 +40,25 @@ function mapIssue(row: {
 function mapTopic(row: {
   id: string;
   title: string;
-  summary: string;
   sourceUrl: string;
+  brief: string;
+  keyFacts: string;
+  fullText: string;
   isApproved: boolean;
   issueId: string;
 }): Topic {
+  let parsedKeyFacts: string[];
+  try {
+    parsedKeyFacts = JSON.parse(row.keyFacts);
+  } catch {
+    parsedKeyFacts = [row.keyFacts];
+  }
   return {
     id: row.id,
     title: row.title,
-    summary: row.summary,
+    brief: row.brief,
+    keyFacts: parsedKeyFacts,
+    fullText: row.fullText,
     sourceUrl: row.sourceUrl,
     isApproved: row.isApproved,
     issueId: row.issueId,
