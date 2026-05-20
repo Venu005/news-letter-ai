@@ -6,10 +6,17 @@ import {
   useSuspenseQuery,
 } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
+import {
+  CheckCircle2,
+  Loader2,
+  Save,
+  Send,
+  Sparkles,
+} from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { IssueStatusBadge } from "@/components/dashboard/issue-status-badge";
 import {
   generateDraft,
   publishIssue,
@@ -23,6 +30,16 @@ import { issueDetailQueryKey } from "@/lib/query/issue-keys";
 
 function draftStateKey(d: IssueDetailPayload) {
   return `${d.issue.updatedAt}|${d.issue.status}|${(d.issue.finalDraft ?? "").length}`;
+}
+
+function countWords(text: string) {
+  const trimmed = text.trim();
+  if (!trimmed) return 0;
+  return trimmed.split(/\s+/).length;
+}
+
+function countMinutes(words: number) {
+  return Math.max(1, Math.round(words / 220));
 }
 
 export function DraftEditor({ issueId }: { issueId: string }) {
@@ -89,6 +106,8 @@ function DraftEditorFields({
     generateMutation.error ?? saveMutation.error ?? publishMutation.error;
 
   const draftTrimmed = draftText.trim();
+  const wordCount = countWords(draftText);
+  const minutes = countMinutes(wordCount);
   const canPublish =
     draftTrimmed.length > 0 &&
     status !== "PUBLISHED" &&
@@ -96,64 +115,118 @@ function DraftEditorFields({
     (status === "DRAFTING" || status === "REVIEWING");
 
   return (
-    <div className="flex flex-col gap-intel-stack-md">
-      {status ? (
-        <div className="flex flex-wrap items-center gap-intel-stack-sm">
+    <div className="flex flex-col gap-5">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-card px-5 py-4">
+        <div className="flex items-center gap-3">
           <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
             Status
           </span>
-          <Badge variant="secondary">{status}</Badge>
+          <IssueStatusBadge status={status} />
         </div>
-      ) : null}
+        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+          <span>{wordCount.toLocaleString()} words</span>
+          <span className="size-1 rounded-full bg-border" aria-hidden="true" />
+          <span>~{minutes} min read</span>
+        </div>
+      </div>
+
       {mutationError ? (
         <Alert variant="destructive">
           <AlertDescription>
-            {mutationError instanceof Error ? mutationError.message : "Request failed."}
+            {mutationError instanceof Error
+              ? mutationError.message
+              : "Request failed."}
           </AlertDescription>
         </Alert>
       ) : null}
       {publishOk ? (
-        <Alert>
-          <AlertDescription>{publishOk}</AlertDescription>
+        <Alert className="border-emerald-300/60 bg-emerald-50 text-emerald-900 dark:border-emerald-400/30 dark:bg-emerald-500/10 dark:text-emerald-200">
+          <AlertDescription className="flex items-center gap-2">
+            <CheckCircle2 className="size-4" aria-hidden="true" />
+            {publishOk}
+          </AlertDescription>
         </Alert>
       ) : null}
-      <div className="flex flex-wrap gap-intel-stack-sm">
-        <Button
-          type="button"
-          disabled={generateMutation.isPending}
-          onClick={() => generateMutation.mutate()}
-        >
-          {generateMutation.isPending ? "Generating…" : "Generate draft"}
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          disabled={saveMutation.isPending}
-          onClick={() => saveMutation.mutate(draftText)}
-        >
-          {saveMutation.isPending ? "Saving…" : "Save draft"}
-        </Button>
-        <Button
-          type="button"
-          variant="default"
-          disabled={
-            publishMutation.isPending ||
-            generateMutation.isPending ||
-            saveMutation.isPending ||
-            !canPublish
-          }
-          onClick={() => publishMutation.mutate(draftText)}
-        >
-          {publishMutation.isPending ? "Publishing…" : "Publish"}
-        </Button>
-      </div>
-      <div className="flex flex-col gap-intel-stack-sm">
-        <span className="text-foreground text-sm font-medium">Markdown</span>
+
+      <div className="flex flex-col overflow-hidden rounded-2xl border border-border bg-card">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-muted/40 px-3 py-2">
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={generateMutation.isPending}
+              onClick={() => generateMutation.mutate()}
+              className="cursor-pointer"
+            >
+              {generateMutation.isPending ? (
+                <>
+                  <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
+                  Generating
+                </>
+              ) : (
+                <>
+                  <Sparkles className="size-3.5" aria-hidden="true" />
+                  Generate from topics
+                </>
+              )}
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={saveMutation.isPending}
+              onClick={() => saveMutation.mutate(draftText)}
+              className="cursor-pointer"
+            >
+              {saveMutation.isPending ? (
+                <>
+                  <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
+                  Saving
+                </>
+              ) : (
+                <>
+                  <Save className="size-3.5" aria-hidden="true" />
+                  Save draft
+                </>
+              )}
+            </Button>
+          </div>
+          <Button
+            type="button"
+            size="sm"
+            disabled={
+              publishMutation.isPending ||
+              generateMutation.isPending ||
+              saveMutation.isPending ||
+              !canPublish
+            }
+            onClick={() => publishMutation.mutate(draftText)}
+            className="cursor-pointer"
+          >
+            {publishMutation.isPending ? (
+              <>
+                <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
+                Publishing
+              </>
+            ) : (
+              <>
+                <Send className="size-3.5" aria-hidden="true" />
+                Publish
+              </>
+            )}
+          </Button>
+        </div>
+        <label htmlFor="draft-markdown" className="sr-only">
+          Markdown draft
+        </label>
         <Textarea
-          rows={18}
-          className="min-h-112 font-mono text-sm"
+          id="draft-markdown"
+          rows={20}
+          className="min-h-112 resize-y rounded-none border-0 bg-transparent font-mono text-sm leading-relaxed shadow-none focus-visible:ring-0"
           value={draftText}
           onChange={(e) => setDraftText(e.target.value)}
+          placeholder="# Your headline\n\nStart writing your issue in markdown…"
           spellCheck
         />
       </div>

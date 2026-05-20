@@ -8,7 +8,7 @@ import {
   Instrument_Serif,
 } from "next/font/google";
 import "./globals.css";
-
+import { TooltipProvider } from "@/components/ui/tooltip"
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -89,7 +89,9 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} ${orchestraManrope.variable} ${orchestraInter.variable} ${instrumentSerif.variable} h-full antialiased`}
       >
         <body className="bg-background text-foreground flex min-h-full flex-col">
+        <TooltipProvider>
           {children}
+          </TooltipProvider>
         </body>
       </html>
     </ClerkProvider>

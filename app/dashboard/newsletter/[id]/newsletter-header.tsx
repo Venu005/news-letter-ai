@@ -2,6 +2,7 @@
 
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { useState } from "react";
+import { Check, Loader2, Save } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,18 +39,33 @@ export function NewsletterHeader({ newsletterId }: { newsletterId: string }) {
     tagline.trim() !== (data.newsletter.tagline ?? "");
 
   return (
-    <section className="flex flex-col gap-intel-stack-md rounded-lg border border-black/10 p-6">
-      <div className="flex flex-col gap-intel-stack-sm">
-        <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+    <section className="flex flex-col gap-5 rounded-2xl border border-border bg-card p-5 sm:p-6">
+      <div className="flex flex-col gap-1.5">
+        <label
+          htmlFor="newsletter-edit-name"
+          className="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+        >
           Name
-        </span>
-        <Input value={name} onChange={(e) => setName(e.target.value)} />
+        </label>
+        <Input
+          id="newsletter-edit-name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          className="h-10"
+        />
       </div>
-      <div className="flex flex-col gap-intel-stack-sm">
-        <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-          Tagline (optional)
-        </span>
+      <div className="flex flex-col gap-1.5">
+        <label
+          htmlFor="newsletter-edit-tagline"
+          className="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+        >
+          Tagline{" "}
+          <span className="font-normal normal-case text-muted-foreground/70">
+            · optional, shown on the public page
+          </span>
+        </label>
         <Textarea
+          id="newsletter-edit-tagline"
           rows={2}
           value={tagline}
           onChange={(e) => setTagline(e.target.value)}
@@ -64,13 +80,32 @@ export function NewsletterHeader({ newsletterId }: { newsletterId: string }) {
           </AlertDescription>
         </Alert>
       ) : null}
-      <Button
-        type="button"
-        disabled={!dirty || saveMutation.isPending || name.trim().length === 0}
-        onClick={() => saveMutation.mutate()}
-      >
-        {saveMutation.isPending ? "Saving…" : "Save"}
-      </Button>
+      <div className="flex flex-wrap items-center justify-end gap-3">
+        {!dirty && !saveMutation.isPending && saveMutation.isSuccess ? (
+          <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+            <Check className="size-3.5 text-emerald-600" aria-hidden="true" />
+            Saved
+          </span>
+        ) : null}
+        <Button
+          type="button"
+          disabled={!dirty || saveMutation.isPending || name.trim().length === 0}
+          onClick={() => saveMutation.mutate()}
+          className="cursor-pointer"
+        >
+          {saveMutation.isPending ? (
+            <>
+              <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+              Saving
+            </>
+          ) : (
+            <>
+              <Save className="size-4" aria-hidden="true" />
+              Save changes
+            </>
+          )}
+        </Button>
+      </div>
     </section>
   );
 }
