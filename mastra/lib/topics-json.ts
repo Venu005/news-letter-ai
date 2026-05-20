@@ -3,8 +3,10 @@ import { z } from "zod";
 export const newsletterTopicSchema = z.array(
   z.object({
     title: z.string().min(1),
-    summary: z.string().min(1),
     sourceUrl: z.string().url(),
+    brief: z.string().min(1),
+    keyFacts: z.array(z.string().min(1)).min(1),
+    fullText: z.string().min(1),
   }),
 );
 

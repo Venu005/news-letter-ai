@@ -68,11 +68,13 @@ model Subscriber {
 }
 
 model Topic {
-  id         String  @id @default(uuid())
+  id         String   @id @default(uuid())
   title      String
-  summary    String
   sourceUrl  String
-  isApproved Boolean @default(true)
+  brief      String
+  keyFacts   String
+  fullText   String
+  isApproved Boolean  @default(true)
   issueId    String
-  issue      Issue   @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  issue      Issue    @relation(fields: [issueId], references: [id], onDelete: Cascade)
 }
