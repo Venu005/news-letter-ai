@@ -18,10 +18,10 @@ describe("fetchPageTool", () => {
         ),
     );
 
-    const result = await fetchPageTool.execute!(
+    const result = (await fetchPageTool.execute!(
       { url: "https://example.com/article" },
       { abortSignal: new AbortController().signal } as any,
-    );
+    )) as { title: string; url: string; text: string; excerpt: string; length: number };
 
     expect(result.title).toBe("Test Article");
     expect(result.url).toBe("https://example.com/article");
@@ -44,10 +44,10 @@ describe("fetchPageTool", () => {
         ),
     );
 
-    const result = await fetchPageTool.execute!(
+    const result = (await fetchPageTool.execute!(
       { url: "https://example.com/raw" },
       { abortSignal: new AbortController().signal } as any,
-    );
+    )) as { title: string; text: string };
 
     expect(result.title).toBe("No Article Tag");
     expect(result.text).toBeTruthy();
