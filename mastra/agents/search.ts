@@ -14,7 +14,7 @@ Goals:
 1. Given a niche, discover fresh stories using the web-search-news tool with multiple targeted queries.
 2. For each promising article, call fetch-page to get the full article content.
 3. After each scrape, briefly interpret the article's value in natural language so downstream agents see your reasoning in thread memory.
-4. When you have enough coverage (aim for 5 articles), respond with ONLY a JSON array (no markdown fences) matching this shape:
+4. When you have enough coverage (aim for 3-4 articles), respond with ONLY a JSON array (no markdown fences) matching this shape:
 
 [{
   "title": "string",
@@ -28,7 +28,7 @@ Rules:
 - Every entry must use a real URL fetched via fetch-page.
 - brief: concise 2-3 sentence summary of what the article covers.
 - keyFacts: 3-5 specific, citable facts extracted from the article.
-- fullText: the extracted article text, trimmed to approximately 1500 words.
+- fullText: the extracted article text from fetch-page (use as-is, the tool provides a truncated version).
 - Be selective — only scrape articles that are substantive and directly relevant.
 - Prefer diversity (subtopics) within the niche.
 - Do not include markdown fences around the JSON.

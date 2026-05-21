@@ -5,6 +5,8 @@ const SAMPLE_HTML = `<!DOCTYPE html><html><head><title>Test Article</title></hea
 
 const RAW_HTML = `<!DOCTYPE html><html><head><title>No Article Tag</title></head><body><h1>No Article Tag</h1><p>Content without semantic markup. Still useful for fallback extraction. Enough text here to produce a proper excerpt for testing purposes.</p><p>More fallback content that should be captured.</p></body></html>`;
 
+const LONG_HTML = `<!DOCTYPE html><html><head><title>Long Article</title></head><body><article><h1>Long Article</h1>${"<p>Lorem ipsum dolor sit amet consectetur adipiscing elit. </p>".repeat(200)}</article></body></html>`;
+
 describe("fetchPageTool", () => {
   it("extracts article content using Readability", async () => {
     vi.stubGlobal(
@@ -30,6 +32,28 @@ describe("fetchPageTool", () => {
     expect(result.excerpt.length).toBeLessThanOrEqual(200);
     expect(result.excerpt).toBe(result.text.slice(0, 200));
     expect(result.length).toBe(result.text.length);
+  });
+
+  it("truncates long articles to ~4000 characters", async () => {
+    vi.stubGlobal(
+      "fetch",
+      () =>
+        Promise.resolve(
+          new Response(LONG_HTML, {
+            status: 200,
+            headers: { "Content-Type": "text/html; charset=utf-8" },
+          }),
+        ),
+    );
+
+    const result = (await fetchPageTool.execute!(
+      { url: "https://example.com/long" },
+      { abortSignal: new AbortController().signal } as any,
+    )) as { title: string; text: string; length: number };
+
+    expect(result.title).toBe("Long Article");
+    expect(result.length).toBeLessThanOrEqual(4000);
+    expect(result.text.length).toBeLessThanOrEqual(4000);
   });
 
   it("falls back to raw text when Readability fails", async () => {

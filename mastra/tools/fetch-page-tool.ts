@@ -31,12 +31,14 @@ async function extractContent(
   return { title: fallbackTitle, text: fallbackText };
 }
 
+const MAX_TEXT_LENGTH = 4_000;
+
 export const fetchPageTool = createTool({
   id: "fetch-page",
   description:
     "Fetch a web page and extract its main article content using Mozilla Readability. " +
     "Call this for each promising article URL found via web-search-news. " +
-    "Returns cleaned article text, title, and a short excerpt.",
+    "Returns cleaned article text (truncated to ~600 words), title, and a short excerpt.",
   inputSchema: z.object({
     url: z.string().url().describe("The URL of the article to fetch"),
   }),
@@ -77,15 +79,16 @@ export const fetchPageTool = createTool({
 
       const html = await response.text();
       const { title, text, siteName } = await extractContent(url, html);
-      const excerpt = text.slice(0, 200);
+      const truncated = text.length > MAX_TEXT_LENGTH ? text.slice(0, MAX_TEXT_LENGTH) : text;
+      const excerpt = truncated.slice(0, 200);
 
       return {
         title,
         url,
-        text,
+        text: truncated,
         excerpt,
         siteName,
-        length: text.length,
+        length: truncated.length,
       };
     } finally {
       clearTimeout(timeout);
