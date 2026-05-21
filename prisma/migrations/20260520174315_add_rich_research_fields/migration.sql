@@ -21,7 +21,7 @@ CREATE TABLE "new_Topic" (
     "issueId" TEXT NOT NULL,
     CONSTRAINT "Topic_issueId_fkey" FOREIGN KEY ("issueId") REFERENCES "Issue" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
-INSERT INTO "new_Topic" ("id", "isApproved", "issueId", "sourceUrl", "title") SELECT "id", "isApproved", "issueId", "sourceUrl", "title" FROM "Topic";
+INSERT INTO "new_Topic" ("id", "isApproved", "issueId", "sourceUrl", "title", "brief", "keyFacts", "fullText") SELECT "id", "isApproved", "issueId", "sourceUrl", "title", '', '[]', '' FROM "Topic";
 DROP TABLE "Topic";
 ALTER TABLE "new_Topic" RENAME TO "Topic";
 PRAGMA foreign_keys=ON;
