@@ -1,11 +1,9 @@
 import { NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { z } from "zod";
-import { mastra } from "@/mastra/index";
 import { requireInternalUserId } from "@/lib/current-user";
 import { newsletterBelongsToUser } from "@/lib/newsletter-owner";
 import { prisma } from "@/lib/prisma";
-import { parseTopicsJson } from "@/mastra/lib/topics-json";
 
 const createIssueSchema = z.object({
   niche: z.string().trim().min(1),
@@ -43,28 +41,6 @@ export async function POST(
       status: "RESEARCHING",
     },
     select: { id: true, niche: true, mastraThreadId: true },
-  });
-
-  const agent = mastra.getAgent("searchAgent");
-  const memoryOpts = { thread: threadId, resource: issue.id } as const;
-
-  const researchResult = await agent.generate(
-    `Research niche: "${issue.niche}". Gather diverse stories, cite real URLs from tools, then emit ONLY the JSON topic array described in your instructions.`,
-    { memory: memoryOpts, maxSteps: 24 },
-  );
-
-  const topicsPayload = parseTopicsJson(researchResult.text);
-
-  await prisma.topic.createMany({
-    data: topicsPayload.map((topic) => ({
-      title: topic.title,
-      sourceUrl: topic.sourceUrl,
-      brief: topic.brief,
-      keyFacts: JSON.stringify(topic.keyFacts),
-      fullText: topic.fullText,
-      issueId: issue.id,
-      isApproved: true,
-    })),
   });
 
   return NextResponse.json({ issueId: issue.id, threadId });
