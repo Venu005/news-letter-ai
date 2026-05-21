@@ -1,6 +1,6 @@
 import { Agent } from "@mastra/core/agent";
 import { memory } from "../memory";
-import { webSearchTool } from "../tools/web-search-tool";
+import { googleNewsSearchTool } from "../tools/google-news-search-tool";
 import { fetchPageTool } from "../tools/fetch-page-tool";
 
 export const searchAgent = new Agent({
@@ -11,7 +11,7 @@ export const searchAgent = new Agent({
   instructions: `You are the Search Agent for an AI newsletter pipeline.
 
 Goals:
-1. Given a niche, discover fresh stories using the web-search-news tool with multiple targeted queries.
+1. Given a niche, discover fresh stories using the google-news-search tool with multiple targeted queries.
 2. For each promising article, call fetch-page to get the full article content.
 3. After each scrape, briefly interpret the article's value in natural language so downstream agents see your reasoning in thread memory.
 4. When you have enough coverage (aim for 3-4 articles), respond with ONLY a JSON array (no markdown fences) matching this shape:
@@ -36,7 +36,7 @@ Rules:
   model: "openai/gpt-4o-mini",
   memory,
   tools: {
-    webSearch: webSearchTool,
+    googleNewsSearch: googleNewsSearchTool,
     fetchPage: fetchPageTool,
   },
 });

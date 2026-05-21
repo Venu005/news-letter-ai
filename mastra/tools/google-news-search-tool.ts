@@ -56,10 +56,10 @@ async function fetchNewsResults(query: string, maxResults: number): Promise<Arra
   return parseGoogleNewsRss(xml).slice(0, maxResults);
 }
 
-export const webSearchTool = createTool({
-  id: "web-search-news",
+export const googleNewsSearchTool = createTool({
+  id: "google-news-search",
   description:
-    "Search recent news for a query using Google News RSS. Returns titles, canonical article URLs (via Google News redirects), and short snippets. Call this when you need fresh sources for a niche or topic.",
+    "Search recent news for a query using Google News RSS. Returns titles, canonical article URLs (via Google News redirects), and short snippets. Call this when you need fresh mainstream news sources for a niche or topic.",
   inputSchema: z.object({
     query: z.string().min(2).describe("Search query (e.g. niche plus qualifiers like year or trend terms)."),
     maxResults: z.number().int().min(3).max(15).optional().default(8),
