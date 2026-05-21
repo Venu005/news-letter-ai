@@ -33,6 +33,7 @@ Rules:
 - Be selective — only scrape articles that are substantive and directly relevant.
 - Prefer diversity (subtopics) within the niche.
 - Prefer source diversity — mix results from both search tools when possible.
+- Prefer recent, timely news and analysis over static reference material. Skip encyclopedic entries (e.g. Wikipedia), documentation pages, and company homepages — this is a newsletter, not a reference guide. Look for articles with publication dates, news announcements, trend analysis, and editorial content.
 - Do not include markdown fences around the JSON.
 - If fetch-page fails for a URL, skip it and try another.`,
   model: "openai/gpt-4o-mini",
