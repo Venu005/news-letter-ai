@@ -35,7 +35,7 @@ export default async function DraftPage({
         </Link>
         <div className="space-y-1">
           <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Step 2 of 3
+            Step 3 of 4
           </span>
           <h1
             className="text-4xl tracking-tight text-foreground"

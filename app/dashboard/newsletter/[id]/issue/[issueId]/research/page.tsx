@@ -1,27 +1,14 @@
 import Link from "next/link";
-import { HydrationBoundary } from "@tanstack/react-query";
-import { Suspense } from "react";
-import { ChevronLeft, Loader2 } from "lucide-react";
-import { TopicsEditor } from "./topics-editor";
+import { ChevronLeft } from "lucide-react";
+import { ResearchStream } from "./research-stream";
 import { IssueStepper } from "@/components/dashboard/issue-stepper";
-import { getIssueDehydratedState } from "@/lib/query/prefetch-issue-detail";
 
-function Fallback() {
-  return (
-    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-      <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-      Loading topics…
-    </div>
-  );
-}
-
-export default async function TopicsPage({
+export default async function ResearchPage({
   params,
 }: {
   params: Promise<{ id: string; issueId: string }>;
 }) {
   const { id, issueId } = await params;
-  const dehydratedState = await getIssueDehydratedState(issueId);
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-8 px-6 py-10 sm:px-8 sm:py-14">
@@ -35,26 +22,22 @@ export default async function TopicsPage({
         </Link>
         <div className="space-y-1">
           <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Step 2 of 4
+            Step 1 of 4
           </span>
           <h1
             className="text-4xl tracking-tight text-foreground"
             style={{ fontFamily: "var(--font-hero-display)", lineHeight: 1.05 }}
           >
-            Curate topics.
+            Research in progress.
           </h1>
           <p className="max-w-2xl text-sm text-muted-foreground">
-            Review the sources we found, edit titles or summaries, and approve
-            the topics you want in your draft.
+            The agent is searching for articles, scraping content, and analyzing
+            sources. Watch the process unfold below.
           </p>
         </div>
-        <IssueStepper current="topics" newsletterId={id} issueId={issueId} />
+        <IssueStepper current="research" newsletterId={id} issueId={issueId} />
       </div>
-      <HydrationBoundary state={dehydratedState}>
-        <Suspense fallback={<Fallback />}>
-          <TopicsEditor newsletterId={id} issueId={issueId} />
-        </Suspense>
-      </HydrationBoundary>
+      <ResearchStream issueId={issueId} newsletterId={id} />
     </div>
   );
 }

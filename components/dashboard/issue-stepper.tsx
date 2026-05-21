@@ -1,10 +1,11 @@
 import Link from "next/link";
-import { Check, Lightbulb, FileText, Send } from "lucide-react";
+import { Check, Lightbulb, FileText, Send, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type Step = "topics" | "draft" | "publish";
+type Step = "research" | "topics" | "draft" | "publish";
 
 const STEPS: { id: Step; label: string; description: string; icon: typeof Check }[] = [
+  { id: "research", label: "Research", description: "Agent gathers", icon: Search },
   { id: "topics", label: "Topics", description: "Curate sources", icon: Lightbulb },
   { id: "draft", label: "Draft", description: "Edit copy", icon: FileText },
   { id: "publish", label: "Publish", description: "Send to readers", icon: Send },

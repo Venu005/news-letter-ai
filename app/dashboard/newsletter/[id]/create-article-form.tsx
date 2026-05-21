@@ -22,7 +22,7 @@ export function CreateArticleForm({ newsletterId }: { newsletterId: string }) {
         queryKey: newsletterDetailQueryKey(newsletterId),
       });
       router.push(
-        `/dashboard/newsletter/${newsletterId}/issue/${data.issueId}/topics`,
+        `/dashboard/newsletter/${newsletterId}/issue/${data.issueId}/research`,
       );
     },
   });

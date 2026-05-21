@@ -45,7 +45,9 @@ export function IssuesList({ newsletterId }: { newsletterId: string }) {
         const editTarget =
           issue.status === "REVIEWING" || issue.status === "PUBLISHED"
             ? "draft"
-            : "topics";
+            : issue.status === "RESEARCHING"
+              ? "research"
+              : "topics";
         const dateLabel = issue.publishedAt
           ? `Published ${formatDate(issue.publishedAt)}`
           : `Updated ${formatDate(issue.updatedAt)}`;
