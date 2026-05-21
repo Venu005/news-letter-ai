@@ -36,7 +36,6 @@
     "@streamdown/math": "^1.0.2",
     "@streamdown/mermaid": "^1.0.2",
     "@tanstack/react-query": "^5.100.9",
-    "@tavily/core": "^0.7.3",
     "@xyflow/react": "^12.10.2",
     "ai": "^6.0.170",
     "ansi-to-react": "^6.2.6",
