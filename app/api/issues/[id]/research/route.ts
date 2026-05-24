@@ -10,7 +10,7 @@ function sseEvent(event: string, data: unknown): string {
 }
 
 export async function POST(
-  _req: Request,
+  req: Request,
   ctx: { params: Promise<{ id: string }> },
 ) {
   const authResult = await requireInternalUserId();
@@ -35,8 +35,10 @@ export async function POST(
 
   const stream = new ReadableStream({
     async start(controller) {
+      const signal = req.signal;
+
       const enqueue = (event: string, data: unknown) => {
-        if (isClosed) return;
+        if (isClosed || signal.aborted) return;
         try {
           controller.enqueue(encoder.encode(sseEvent(event, data)));
         } catch {
@@ -66,7 +68,7 @@ export async function POST(
             isError?: boolean;
           };
         }>) {
-          if (isClosed) break;
+          if (isClosed || signal.aborted) break;
 
           if (chunk.type === "tool-call") {
             enqueue("step", {
