@@ -36,14 +36,17 @@ In `draft-editor.tsx`:
 - On "Generate from topics" success: convert `result.draft` (markdown) to HTML via `marked.parse()` before `setDraftText()`
 - On save/publish: send HTML string (unchanged, same `finalDraft` column)
 - Remove `font-mono` styling since rich text is no longer monospace
+- Update `countWords` to strip HTML tags before counting (e.g., `text.replace(/<[^>]+>/g, '').split(/\s+/)`)
 
 ### Public Page Changes
 
-In `app/p/[slug]/i/[issueSlug]/page.tsx`:
+In `app/p/[slug]/i/[issueSlug]/issue-markdown.tsx`:
 
-- Replace `Streamdown` rendering with `dangerouslySetInnerHTML` or a simple HTML container
-- The `finalDraft` field now contains HTML instead of markdown
-- Backwards compatibility: if `finalDraft` starts with `<` (HTML tag), render as HTML; otherwise, wrap in `<pre>` or run through `marked` as fallback
+- Rename component to `IssueContent` (or keep name, update logic)
+- If `source` starts with `<` (HTML): render with `dangerouslySetInnerHTML`
+- Else (legacy markdown): render with `Streamdown` as before
+- Keep the same `<article>` container with `prose` Tailwind classes
+- Update `readingTime()` in `page.tsx` to strip HTML tags before counting words
 
 ## Files Changed
 
