@@ -14,7 +14,8 @@ function formatDate(date: Date) {
 }
 
 function readingTime(text: string) {
-  const words = text.trim().split(/\s+/).length;
+  const stripped = text.replace(/<[^>]+>/g, "").trim();
+  const words = stripped.split(/\s+/).length;
   return Math.max(1, Math.round(words / 220));
 }
 

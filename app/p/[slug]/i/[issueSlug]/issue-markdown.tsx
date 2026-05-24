@@ -2,7 +2,21 @@
 
 import { Streamdown } from "streamdown";
 
+function isHtml(content: string): boolean {
+  return /^\s*</.test(content);
+}
+
 export function IssueMarkdown({ source }: { source: string }) {
+  if (isHtml(source)) {
+    return (
+      <article
+        className="prose prose-neutral max-w-none prose-headings:font-medium prose-headings:tracking-tight prose-p:leading-relaxed prose-a:text-foreground prose-a:underline-offset-4 prose-a:transition-colors hover:prose-a:text-foreground/70 prose-img:rounded-xl prose-img:border prose-img:border-border dark:prose-invert"
+        style={{ fontFamily: "var(--font-hero-body)" }}
+        dangerouslySetInnerHTML={{ __html: source }}
+      />
+    );
+  }
+
   return (
     <article
       className="prose prose-neutral max-w-none prose-headings:font-medium prose-headings:tracking-tight prose-p:leading-relaxed prose-a:text-foreground prose-a:underline-offset-4 prose-a:transition-colors hover:prose-a:text-foreground/70 prose-img:rounded-xl prose-img:border prose-img:border-border dark:prose-invert"

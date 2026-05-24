@@ -13,9 +13,9 @@ import {
   Send,
   Sparkles,
 } from "lucide-react";
+import { marked } from "marked";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { IssueStatusBadge } from "@/components/dashboard/issue-status-badge";
 import {
   generateDraft,
@@ -27,15 +27,16 @@ import {
   fetchIssueDetail,
 } from "@/lib/query/fetch-issue-detail";
 import { issueDetailQueryKey } from "@/lib/query/issue-keys";
+import { RichTextEditor } from "./rich-text-editor";
 
 function draftStateKey(d: IssueDetailPayload) {
   return `${d.issue.updatedAt}|${d.issue.status}|${(d.issue.finalDraft ?? "").length}`;
 }
 
 function countWords(text: string) {
-  const trimmed = text.trim();
-  if (!trimmed) return 0;
-  return trimmed.split(/\s+/).length;
+  const stripped = text.replace(/<[^>]+>/g, "").trim();
+  if (!stripped) return 0;
+  return stripped.split(/\s+/).length;
 }
 
 function countMinutes(words: number) {
@@ -77,7 +78,7 @@ function DraftEditorFields({
   const generateMutation = useMutation({
     mutationFn: () => generateDraft({ issueId }),
     onSuccess: (result) => {
-      setDraftText(result.draft);
+      setDraftText(marked.parse(result.draft) as string);
       setPublishOk(null);
       void invalidate();
     },
@@ -217,17 +218,10 @@ function DraftEditorFields({
             )}
           </Button>
         </div>
-        <label htmlFor="draft-markdown" className="sr-only">
-          Markdown draft
-        </label>
-        <Textarea
-          id="draft-markdown"
-          rows={20}
-          className="min-h-112 resize-y rounded-none border-0 bg-transparent font-mono text-sm leading-relaxed shadow-none focus-visible:ring-0"
-          value={draftText}
-          onChange={(e) => setDraftText(e.target.value)}
-          placeholder="# Your headline\n\nStart writing your issue in markdown…"
-          spellCheck
+        <RichTextEditor
+          content={draftText}
+          onChange={setDraftText}
+          placeholder="Start writing your issue…"
         />
       </div>
     </div>
