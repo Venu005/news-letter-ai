@@ -4,22 +4,24 @@ import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-q
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import {
-  ArrowRight,
-  Check,
-  ExternalLink,
+  CheckCircle2,
+  GripVertical,
   Loader2,
-  Save,
+  Pencil,
+  Sparkles,
+  Trash2,
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { saveTopics } from "@/lib/mutation/issue-mutations";
+import { generateDraft, saveTopics } from "@/lib/mutation/issue-mutations";
 import {
   type IssueDetailPayload,
   fetchIssueDetail,
 } from "@/lib/query/fetch-issue-detail";
 import { issueDetailQueryKey } from "@/lib/query/issue-keys";
+import { sourceHostname, sourceInitial } from "@/lib/source-badge";
 import type { Topic } from "@/lib/types/topic";
 import { cn } from "@/lib/utils";
 
@@ -47,7 +49,6 @@ export function TopicsEditor({
       newsletterId={newsletterId}
       issueId={issueId}
       initialTopics={data.topics}
-      niche={data.issue.niche}
     />
   );
 }
@@ -56,16 +57,15 @@ function TopicsEditorForm({
   newsletterId,
   issueId,
   initialTopics,
-  niche,
 }: {
   newsletterId: string;
   issueId: string;
   initialTopics: Topic[];
-  niche: string;
 }) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [topics, setTopics] = useState(initialTopics);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const saveMutation = useMutation({
     mutationFn: (payload: Topic[]) =>
@@ -82,192 +82,212 @@ function TopicsEditorForm({
       queryClient.invalidateQueries({ queryKey: issueDetailQueryKey(issueId) }),
   });
 
+  const generateMutation = useMutation({
+    mutationFn: async () => {
+      await saveTopics({
+        issueId,
+        topics: topics.map((t) => ({
+          id: t.id,
+          title: t.title,
+          sourceUrl: t.sourceUrl,
+          isApproved: t.isApproved,
+        })),
+      });
+      return generateDraft({ issueId });
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: issueDetailQueryKey(issueId) });
+      router.push(
+        `/dashboard/newsletter/${newsletterId}/issue/${issueId}/draft`,
+      );
+    },
+  });
+
   const approvedCount = topics.filter((t) => t.isApproved).length;
   const hasApproved = approvedCount > 0;
+  const mutationError = saveMutation.error ?? generateMutation.error;
 
   function updateTopic(id: string, patch: Partial<Topic>) {
     setTopics((prev) => prev.map((t) => (t.id === id ? { ...t, ...patch } : t)));
   }
 
+  function toggleApproved(id: string) {
+    setTopics((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, isApproved: !t.isApproved } : t)),
+    );
+  }
+
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-card px-5 py-4">
-        <div className="space-y-0.5">
-          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Niche
-          </span>
-          <p className="text-sm font-medium text-foreground">{niche}</p>
+      <div className="flex flex-wrap items-end justify-between gap-4 border-b border-[var(--intel-surface-container-highest)] pb-6">
+        <div>
+          <h2 className="font-[family-name:var(--font-orch-heading)] text-orch-h2 text-[var(--intel-on-surface)]">
+            Outline &amp; Research Review
+          </h2>
+          <div className="mt-3 flex w-fit items-center gap-2 rounded-full bg-[var(--intel-secondary-fixed)]/30 px-3 py-1.5">
+            <CheckCircle2 className="size-[18px] text-[var(--intel-secondary)]" />
+            <span className="font-[family-name:var(--font-orch-body)] text-orch-label-sm text-[var(--intel-on-secondary-fixed)]">
+              Search Agent found {topics.length} relevant topic
+              {topics.length === 1 ? "" : "s"}
+            </span>
+          </div>
         </div>
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs">
-            <Check className="size-3" aria-hidden="true" />
-            {approvedCount} approved
-          </span>
-          <span className="text-xs text-muted-foreground/70">
-            of {topics.length}
-          </span>
-        </div>
+        <Button
+          type="button"
+          disabled={!hasApproved || generateMutation.isPending || saveMutation.isPending}
+          onClick={() => generateMutation.mutate()}
+          className="h-11 gap-2 bg-[var(--intel-primary)] px-6 font-[family-name:var(--font-orch-body)] text-orch-label-md text-[var(--intel-on-primary)] hover:bg-[var(--intel-primary)]/90"
+        >
+          {generateMutation.isPending ? (
+            <>
+              <Loader2 className="size-[18px] animate-spin" />
+              Generating…
+            </>
+          ) : (
+            <>
+              <Sparkles className="size-[18px]" />
+              Generate Draft
+            </>
+          )}
+        </Button>
       </div>
 
-      {saveMutation.error ? (
+      {mutationError ? (
         <Alert variant="destructive">
           <AlertDescription>
-            {saveMutation.error instanceof Error
-              ? saveMutation.error.message
-              : "Failed to save topics."}
+            {mutationError instanceof Error
+              ? mutationError.message
+              : "Request failed."}
           </AlertDescription>
         </Alert>
       ) : null}
 
-      <ul className="flex flex-col gap-3">
-        {topics.map((t, idx) => (
-          <li
-            key={t.id}
-            className={cn(
-              "rounded-2xl border bg-card p-5 transition-colors duration-200",
-              t.isApproved
-                ? "border-emerald-200 bg-emerald-50/40 dark:border-emerald-400/30 dark:bg-emerald-500/5"
-                : "border-border",
-            )}
-          >
-            <div className="mb-3 flex items-center justify-between gap-3">
-              <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Topic {idx + 1}
-              </span>
-              <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-foreground">
-                <span className="text-xs uppercase tracking-wide text-muted-foreground">
-                  {t.isApproved ? "Approved" : "Approve"}
-                </span>
-                <span
-                  className={cn(
-                    "relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200",
-                    t.isApproved ? "bg-emerald-600" : "bg-muted",
-                  )}
-                >
-                  <input
-                    type="checkbox"
-                    className="peer absolute inset-0 h-full w-full cursor-pointer opacity-0"
-                    checked={t.isApproved}
-                    onChange={(e) =>
-                      updateTopic(t.id, { isApproved: e.target.checked })
-                    }
-                  />
-                  <span
-                    aria-hidden="true"
-                    className={cn(
-                      "size-4 rounded-full bg-background shadow-sm transition-transform duration-200",
-                      t.isApproved ? "translate-x-4" : "translate-x-0.5",
-                    )}
-                  />
-                </span>
-              </label>
-            </div>
-            <div className="grid grid-cols-1 gap-4">
-              <div className="flex flex-col gap-1.5">
-                <label
-                  htmlFor={`topic-title-${t.id}`}
-                  className="text-xs font-medium uppercase tracking-wide text-muted-foreground"
-                >
-                  Title
-                </label>
-                <Input
-                  id={`topic-title-${t.id}`}
-                  value={t.title}
-                  onChange={(e) => updateTopic(t.id, { title: e.target.value })}
-                />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label
-                  htmlFor={`topic-summary-${t.id}`}
-                  className="text-xs font-medium uppercase tracking-wide text-muted-foreground"
-                >
-                  Brief
-                </label>
-                <Textarea
-                  id={`topic-summary-${t.id}`}
-                  rows={3}
-                  value={t.brief}
-                  onChange={(e) => updateTopic(t.id, { brief: e.target.value })}
-                />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label
-                  htmlFor={`topic-source-${t.id}`}
-                  className="text-xs font-medium uppercase tracking-wide text-muted-foreground"
-                >
-                  Source URL
-                </label>
-                <div className="flex flex-col gap-1 sm:flex-row sm:items-center">
-                  <Input
-                    id={`topic-source-${t.id}`}
-                    value={t.sourceUrl}
-                    onChange={(e) =>
-                      updateTopic(t.id, { sourceUrl: e.target.value })
-                    }
-                    placeholder="https://example.com/article"
-                    className="flex-1"
-                  />
-                  {t.sourceUrl ? (
-                    <a
-                      href={t.sourceUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center gap-1 self-start rounded-md px-2 py-1 text-xs text-muted-foreground transition-colors duration-200 hover:bg-muted hover:text-foreground cursor-pointer"
-                    >
-                      Open
-                      <ExternalLink className="size-3" aria-hidden="true" />
-                    </a>
-                  ) : null}
-                </div>
-              </div>
-            </div>
-          </li>
-        ))}
-      </ul>
+      <div className="max-w-4xl space-y-4">
+        <div className="mb-2 flex items-center justify-between">
+          <h3 className="font-[family-name:var(--font-orch-heading)] text-lg text-[var(--intel-on-surface)]">
+            Topics for this issue
+          </h3>
+          <span className="font-[family-name:var(--font-orch-body)] text-orch-body-sm text-[var(--intel-on-surface-variant)]">
+            {approvedCount} approved · click to toggle
+          </span>
+        </div>
 
-      <div className="sticky bottom-4 z-10 mt-2 flex flex-wrap items-center justify-end gap-2 rounded-2xl border border-border bg-background/80 px-4 py-3 backdrop-blur-md supports-backdrop-filter:bg-background/65">
+        <ul className="space-y-4">
+          {topics.map((topic) => (
+            <li
+              key={topic.id}
+              className={cn(
+                "group relative flex gap-4 rounded-lg border bg-[var(--intel-surface-container-lowest)] p-4 shadow-[0_4px_24px_rgba(0,0,0,0.02)] transition-colors",
+                topic.isApproved
+                  ? "border-[var(--intel-secondary)]/40"
+                  : "border-[var(--intel-surface-container-highest)] hover:border-[var(--intel-secondary)]/30",
+              )}
+            >
+              <GripVertical
+                className="mt-1 size-5 shrink-0 text-[var(--intel-on-surface-variant)] opacity-40"
+                aria-hidden
+              />
+              <div className="min-w-0 flex-1">
+                {editingId === topic.id ? (
+                  <div className="space-y-3">
+                    <Input
+                      value={topic.title}
+                      onChange={(e) =>
+                        updateTopic(topic.id, { title: e.target.value })
+                      }
+                      className="font-[family-name:var(--font-orch-heading)] text-orch-body-lg"
+                    />
+                    <Textarea
+                      rows={3}
+                      value={topic.brief}
+                      onChange={(e) =>
+                        updateTopic(topic.id, { brief: e.target.value })
+                      }
+                    />
+                    <Input
+                      value={topic.sourceUrl}
+                      onChange={(e) =>
+                        updateTopic(topic.id, { sourceUrl: e.target.value })
+                      }
+                      placeholder="https://"
+                    />
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={() => {
+                          saveMutation.mutate(topics);
+                          setEditingId(null);
+                        }}
+                      >
+                        Done
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setEditingId(null)}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="mb-2 flex items-start justify-between gap-4">
+                      <button
+                        type="button"
+                        onClick={() => toggleApproved(topic.id)}
+                        className="text-left"
+                      >
+                        <h4 className="font-[family-name:var(--font-orch-heading)] text-orch-body-lg text-[var(--intel-on-surface)]">
+                          {topic.title}
+                        </h4>
+                      </button>
+                      <div className="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                        <button
+                          type="button"
+                          title="Edit"
+                          onClick={() => setEditingId(topic.id)}
+                          className="flex size-8 items-center justify-center rounded text-[var(--intel-on-surface-variant)] transition-colors hover:bg-[var(--intel-surface-container-high)]"
+                        >
+                          <Pencil className="size-[18px]" />
+                        </button>
+                        <button
+                          type="button"
+                          title="Remove from issue"
+                          onClick={() => toggleApproved(topic.id)}
+                          className="flex size-8 items-center justify-center rounded text-[var(--intel-error)] transition-colors hover:bg-[var(--intel-error-container)]"
+                        >
+                          <Trash2 className="size-[18px]" />
+                        </button>
+                      </div>
+                    </div>
+                    <p className="mb-4 line-clamp-2 font-[family-name:var(--font-orch-body)] text-orch-body-sm text-[var(--intel-on-surface-variant)]">
+                      {topic.brief}
+                    </p>
+                    {topic.sourceUrl ? (
+                      <div className="flex flex-wrap gap-2">
+                        <span className="inline-flex items-center gap-1.5 rounded border border-[var(--intel-surface-container-high)] bg-[var(--intel-surface-container)] px-2 py-1 font-[family-name:var(--font-orch-body)] text-orch-label-sm text-[var(--intel-on-surface-variant)]">
+                          <span className="flex size-3.5 items-center justify-center rounded bg-[var(--intel-primary)] text-[8px] font-bold text-white">
+                            {sourceInitial(topic.sourceUrl)}
+                          </span>
+                          {sourceHostname(topic.sourceUrl)}
+                        </span>
+                      </div>
+                    ) : null}
+                  </>
+                )}
+              </div>
+            </li>
+          ))}
+        </ul>
+
         {!hasApproved ? (
-          <span className="mr-auto text-xs text-muted-foreground">
-            Approve at least one topic to continue.
-          </span>
-        ) : (
-          <span className="mr-auto text-xs text-muted-foreground">
-            {approvedCount} topic{approvedCount === 1 ? "" : "s"} ready for the
-            draft.
-          </span>
-        )}
-        <Button
-          type="button"
-          variant="outline"
-          disabled={saveMutation.isPending || topics.length === 0}
-          onClick={() => saveMutation.mutate(topics)}
-          className="cursor-pointer"
-        >
-          {saveMutation.isPending ? (
-            <>
-              <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-              Saving
-            </>
-          ) : (
-            <>
-              <Save className="size-4" aria-hidden="true" />
-              Save
-            </>
-          )}
-        </Button>
-        <Button
-          type="button"
-          disabled={!hasApproved}
-          onClick={() =>
-            router.push(
-              `/dashboard/newsletter/${newsletterId}/issue/${issueId}/draft`,
-            )
-          }
-          className="cursor-pointer"
-        >
-          Continue
-          <ArrowRight className="size-4" aria-hidden="true" />
-        </Button>
+          <p className="text-center font-[family-name:var(--font-orch-body)] text-orch-body-sm text-[var(--intel-on-surface-variant)]">
+            Approve at least one topic to generate a draft.
+          </p>
+        ) : null}
       </div>
     </div>
   );

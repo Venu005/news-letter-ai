@@ -22,3 +22,12 @@
 # database
 - Use Turso (libsql) for database. Confidence: 0.60
 
+# design
+- Use Notion-style design aesthetic: clean, minimal, lots of whitespace, subtle borders, light backgrounds. Confidence: 0.65
+
+# design
+- Use Notion-style design aesthetic for UI components. Confidence: 0.70
+
+# design
+- Use Notion-style, clean, minimal aesthetics for UI design. Confidence: 0.70
+

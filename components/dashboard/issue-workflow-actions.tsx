@@ -6,41 +6,52 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
 
-type WorkflowActions = {
-  onSave?: () => void;
-  onPublish?: () => void;
+type WorkflowFlags = {
   saveDisabled?: boolean;
   publishDisabled?: boolean;
   savePending?: boolean;
   publishPending?: boolean;
 };
 
-type WorkflowActionsContextValue = WorkflowActions & {
-  register: (actions: WorkflowActions) => () => void;
+type WorkflowActionsContextValue = WorkflowFlags & {
+  saveRef: React.RefObject<(() => void) | undefined>;
+  publishRef: React.RefObject<(() => void) | undefined>;
+  setFlags: (flags: WorkflowFlags) => void;
 };
 
 const IssueWorkflowActionsContext =
   createContext<WorkflowActionsContextValue | null>(null);
+
+function flagsEqual(a: WorkflowFlags, b: WorkflowFlags): boolean {
+  return (
+    a.saveDisabled === b.saveDisabled &&
+    a.publishDisabled === b.publishDisabled &&
+    a.savePending === b.savePending &&
+    a.publishPending === b.publishPending
+  );
+}
 
 export function IssueWorkflowActionsProvider({
   children,
 }: {
   children: ReactNode;
 }) {
-  const [actions, setActions] = useState<WorkflowActions>({});
+  const saveRef = useRef<(() => void) | undefined>(undefined);
+  const publishRef = useRef<(() => void) | undefined>(undefined);
+  const [flags, setFlagsState] = useState<WorkflowFlags>({});
 
-  const register = useCallback((next: WorkflowActions) => {
-    setActions(next);
-    return () => setActions({});
+  const setFlags = useCallback((next: WorkflowFlags) => {
+    setFlagsState((prev) => (flagsEqual(prev, next) ? prev : next));
   }, []);
 
   const value = useMemo(
-    () => ({ ...actions, register }),
-    [actions, register],
+    () => ({ ...flags, saveRef, publishRef, setFlags }),
+    [flags, setFlags],
   );
 
   return (
@@ -57,24 +68,33 @@ export function useIssueWorkflowActionsRegistration({
   publishDisabled,
   savePending,
   publishPending,
-}: WorkflowActions) {
-  const ctxRef = useContext(IssueWorkflowActionsContext);
+}: WorkflowFlags & {
+  onSave?: () => void;
+  onPublish?: () => void;
+}) {
+  const ctx = useContext(IssueWorkflowActionsContext);
+
+  if (ctx) {
+    ctx.saveRef.current = onSave;
+    ctx.publishRef.current = onPublish;
+  }
 
   useEffect(() => {
-    if (!ctxRef) return;
-    return ctxRef.register({
-      onSave,
-      onPublish,
-      saveDisabled,
-      publishDisabled,
-      savePending,
-      publishPending,
-    });
-    // ctxRef.register is stable — exclude ctxRef from deps to avoid re-registering
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [onSave, onPublish, saveDisabled, publishDisabled, savePending, publishPending]);
+    if (!ctx) return;
+    ctx.setFlags({ saveDisabled, publishDisabled, savePending, publishPending });
+  }, [ctx, saveDisabled, publishDisabled, savePending, publishPending]);
 }
 
 export function useIssueWorkflowActions() {
-  return useContext(IssueWorkflowActionsContext);
+  const ctx = useContext(IssueWorkflowActionsContext);
+  if (!ctx) return null;
+
+  return {
+    saveDisabled: ctx.saveDisabled,
+    publishDisabled: ctx.publishDisabled,
+    savePending: ctx.savePending,
+    publishPending: ctx.publishPending,
+    onSave: () => ctx.saveRef.current?.(),
+    onPublish: () => ctx.publishRef.current?.(),
+  };
 }

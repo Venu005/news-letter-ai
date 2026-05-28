@@ -3,19 +3,19 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  Edit3,
   HelpCircle,
-  Home,
   LayoutDashboard,
   LifeBuoy,
   Plus,
+  Search,
+  Settings,
+  Sparkles,
 } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -23,172 +23,148 @@ import {
   SidebarSeparator,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 type NavItem = {
   href: string;
   label: string;
-  icon: typeof Home;
-  matchPrefix?: string;
+  icon: typeof LayoutDashboard;
+  match: (pathname: string) => boolean;
 };
 
-const PRIMARY_NAV: NavItem[] = [
+const WORKFLOW_NAV: NavItem[] = [
   {
     href: "/dashboard",
     label: "Dashboard",
     icon: LayoutDashboard,
-    matchPrefix: "/dashboard",
+    match: (p) => p === "/dashboard",
+  },
+  {
+    href: "/dashboard",
+    label: "Research",
+    icon: Search,
+    match: (p) => /\/issue\/[^/]+\/(research|topics)/.test(p),
+  },
+  {
+    href: "/dashboard",
+    label: "Drafting",
+    icon: Edit3,
+    match: (p) => /\/issue\/[^/]+\/draft/.test(p),
+  },
+  {
+    href: "/dashboard",
+    label: "AI Agents",
+    icon: Sparkles,
+    match: () => false,
+  },
+  {
+    href: "/dashboard",
+    label: "Settings",
+    icon: Settings,
+    match: () => false,
   },
 ];
 
-const RESOURCE_NAV: NavItem[] = [
-  {
-    href: "/",
-    label: "Public site",
-    icon: Home,
-  },
-];
-
-const FOOTER_NAV: NavItem[] = [
-  {
-    href: "mailto:support@orchestra.app",
-    label: "Support",
-    icon: LifeBuoy,
-  },
-  {
-    href: "https://mastra.ai/llms.txt",
-    label: "Help & docs",
-    icon: HelpCircle,
-  },
-];
-
-function isActive(pathname: string, item: NavItem) {
-  if (item.matchPrefix) return pathname.startsWith(item.matchPrefix);
-  return pathname === item.href;
+function navHref(item: NavItem, pathname: string): string {
+  if (item.label === "Dashboard") return "/dashboard";
+  const match = pathname.match(/\/dashboard\/newsletter\/([^/]+)\/issue\/([^/]+)/);
+  if (!match) return "/dashboard";
+  const [, newsletterId, issueId] = match;
+  if (item.label === "Research") {
+    return `/dashboard/newsletter/${newsletterId}/issue/${issueId}/topics`;
+  }
+  if (item.label === "Drafting") {
+    return `/dashboard/newsletter/${newsletterId}/issue/${issueId}/draft`;
+  }
+  return "/dashboard";
 }
 
 export function OrchestraDashboardSidebar() {
   const pathname = usePathname() ?? "";
 
   return (
-    <Sidebar collapsible="icon">
-      <SidebarHeader>
+    <Sidebar
+      collapsible="icon"
+      className="border-r border-[var(--intel-surface-container-high)] bg-[var(--intel-surface-container-lowest)]"
+    >
+      <SidebarHeader className="px-4 pt-6">
         <Link
           href="/dashboard"
-          className="group/brand flex items-center gap-3 rounded-md px-2 py-2 text-foreground transition-colors duration-200 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground cursor-pointer"
+          className="mb-6 flex items-center gap-3 px-2 transition-opacity hover:opacity-90"
         >
-          <span
-            aria-hidden="true"
-            className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground"
-            style={{ fontFamily: "var(--font-hero-display)" }}
-          >
-            <span className="text-base font-medium">O</span>
+          <span className="flex size-8 shrink-0 items-center justify-center rounded bg-[var(--intel-primary)] font-[family-name:var(--font-orch-heading)] text-sm font-bold text-[var(--intel-on-primary)]">
+            O
           </span>
-          <span className="flex min-w-0 flex-col leading-tight group-data-[collapsible=icon]:hidden">
-            <span
-              className="truncate text-base font-semibold tracking-tight"
-              style={{ fontFamily: "var(--font-hero-display)" }}
-            >
-              Orchestra
+          <span className="min-w-0 group-data-[collapsible=icon]:hidden">
+            <span className="block font-[family-name:var(--font-orch-heading)] text-lg font-bold leading-none tracking-tight text-[var(--intel-on-surface)]">
+              Orchestra AI
             </span>
-            <span className="truncate text-xs text-muted-foreground">
-              Newsletter Studio
+            <span className="mt-1 block font-[family-name:var(--font-orch-body)] text-orch-label-sm uppercase tracking-wider text-[var(--intel-on-surface-variant)]">
+              Newsletter Engine
             </span>
           </span>
         </Link>
 
         <Button
           asChild
-          size="default"
-          className="mt-1 h-9 w-full justify-start gap-2 group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0 cursor-pointer"
+          className="h-10 w-full justify-center gap-2 bg-[var(--intel-primary)] font-[family-name:var(--font-orch-body)] text-orch-label-md text-[var(--intel-on-primary)] hover:bg-[var(--intel-primary)]/90 group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:px-0"
         >
           <Link href="/dashboard#create-newsletter">
-            <Plus className="size-4" aria-hidden="true" />
-            <span className="group-data-[collapsible=icon]:hidden">
-              New newsletter
-            </span>
+            <Plus className="size-4" />
+            <span className="group-data-[collapsible=icon]:hidden">New Draft</span>
           </Link>
         </Button>
       </SidebarHeader>
 
-      <SidebarSeparator className="mt-2" />
+      <SidebarSeparator />
 
-      <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Workspace</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {PRIMARY_NAV.map((item) => {
-                const Icon = item.icon;
-                const active = isActive(pathname, item);
-                return (
-                  <SidebarMenuItem key={item.href}>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={active}
-                      tooltip={item.label}
-                    >
-                      <Link href={item.href} className="cursor-pointer">
-                        <Icon aria-hidden="true" />
-                        <span>{item.label}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              })}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        <SidebarGroup>
-          <SidebarGroupLabel>Resources</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {RESOURCE_NAV.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <SidebarMenuItem key={item.href}>
-                    <SidebarMenuButton asChild tooltip={item.label}>
-                      <Link href={item.href} className="cursor-pointer">
-                        <Icon aria-hidden="true" />
-                        <span>{item.label}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              })}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      </SidebarContent>
-
-      <SidebarFooter>
-        <SidebarMenu>
-          {FOOTER_NAV.map((item) => {
+      <SidebarContent className="px-2 py-2">
+        <SidebarMenu className="gap-1">
+          {WORKFLOW_NAV.map((item) => {
             const Icon = item.icon;
-            const isExternal = item.href.startsWith("http") || item.href.startsWith("mailto:");
+            const active = item.match(pathname);
+            const href = navHref(item, pathname);
             return (
-              <SidebarMenuItem key={item.href}>
-                <SidebarMenuButton asChild tooltip={item.label}>
-                  {isExternal ? (
-                    <a
-                      href={item.href}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="cursor-pointer"
-                    >
-                      <Icon aria-hidden="true" />
-                      <span>{item.label}</span>
-                    </a>
-                  ) : (
-                    <Link href={item.href} className="cursor-pointer">
-                      <Icon aria-hidden="true" />
-                      <span>{item.label}</span>
-                    </Link>
+              <SidebarMenuItem key={item.label}>
+                <SidebarMenuButton
+                  asChild
+                  isActive={active}
+                  tooltip={item.label}
+                  className={cn(
+                    "h-10 rounded font-[family-name:var(--font-orch-body)] text-orch-label-md",
+                    active &&
+                      "border-r-2 border-[var(--intel-secondary)] bg-[var(--intel-secondary-fixed)]/30 font-semibold text-[var(--intel-secondary)]",
                   )}
+                >
+                  <Link href={href}>
+                    <Icon className="size-5" />
+                    <span>{item.label}</span>
+                  </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             );
           })}
+        </SidebarMenu>
+      </SidebarContent>
+
+      <SidebarFooter className="border-t border-[var(--intel-surface-container-high)] px-2 py-4">
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild tooltip="Support">
+              <a href="mailto:support@orchestra.app">
+                <LifeBuoy className="size-5" />
+                <span>Support</span>
+              </a>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild tooltip="Help & docs">
+              <a href="https://mastra.ai/llms.txt" target="_blank" rel="noreferrer">
+                <HelpCircle className="size-5" />
+                <span>Help & docs</span>
+              </a>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
     </Sidebar>
