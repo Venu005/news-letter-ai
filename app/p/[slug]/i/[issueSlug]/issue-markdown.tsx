@@ -1,27 +1,33 @@
 "use client";
 
 import { Streamdown } from "streamdown";
+import { cn } from "@/lib/utils";
+import { notionDocumentProse } from "@/app/dashboard/newsletter/[id]/issue/[issueId]/draft/document-prose";
 
 function isHtml(content: string): boolean {
-  return /^\s*</.test(content);
+  return /<[a-z][\s\S]*>/i.test(content.trim());
 }
 
-export function IssueMarkdown({ source }: { source: string }) {
+export function IssueMarkdown({
+  source,
+  className,
+}: {
+  source: string;
+  className?: string;
+}) {
+  const articleClass = cn(notionDocumentProse, className);
+
   if (isHtml(source)) {
     return (
       <article
-        className="prose prose-neutral max-w-none prose-headings:font-medium prose-headings:tracking-tight prose-p:leading-relaxed prose-a:text-foreground prose-a:underline-offset-4 prose-a:transition-colors hover:prose-a:text-foreground/70 prose-img:rounded-xl prose-img:border prose-img:border-border dark:prose-invert"
-        style={{ fontFamily: "var(--font-hero-body)" }}
+        className={articleClass}
         dangerouslySetInnerHTML={{ __html: source }}
       />
     );
   }
 
   return (
-    <article
-      className="prose prose-neutral max-w-none prose-headings:font-medium prose-headings:tracking-tight prose-p:leading-relaxed prose-a:text-foreground prose-a:underline-offset-4 prose-a:transition-colors hover:prose-a:text-foreground/70 prose-img:rounded-xl prose-img:border prose-img:border-border dark:prose-invert"
-      style={{ fontFamily: "var(--font-hero-body)" }}
-    >
+    <article className={articleClass}>
       <Streamdown mode="static">{source}</Streamdown>
     </article>
   );
